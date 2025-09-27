@@ -1,69 +1,75 @@
-# React + TypeScript + Vite
+# Yuru AWS - AI-Powered Hand-drawn AWS Architecture Diagram Tool
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+手書き風のAWSアーキテクチャ図を簡単に作成できるWebアプリケーションです。AIによる自動生成機能と直感的な操作で、美しい構成図を素早く作成できます。
 
-Currently, two official plugins are available:
+## 主要機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **アイコン配置**: ドラッグ&ドロップでAWSサービスアイコンを配置
+- **AI自動生成**: プロンプトからAWS構成図を自動生成
+- **手描き風スタイル**: クレヨンで描いたようなアイコンや、直線ではない線
+- **豊富なAWSサービス**: よく使われるAWSサービスアイコンをピックアップ
+- **直感的操作**: ドラッグ&ドロップ、範囲選択
+- **編集機能**: ノード/フレーム/エッジの追加・削除・移動・リサイズ
+- **データ入出力**: JSONによる構成図の保存・読み込み
+- **手描きツール**: ペンツールによる自由描画
 
-## Expanding the ESLint configuration
+## インストール方法
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### 1. リポジトリのクローン
+```bash
+git clone https://github.com/hayayu0/yuru-aws.git
+cd yuru-aws
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### 2. 依存関係のインストール
+```bash
+npm install
 ```
+
+### 3. 設定ファイルの準備
+```bash
+cp public/config.example.json public/config.json
+```
+
+`public/config.json` を編集してAIエンドポイントを設定してください：
+```json
+{
+  "AI_PROMPT_ENDPOINT": "YOUR_AI_ENDPOINT_URL_HERE"
+}
+```
+
+### 4. 開発サーバーの起動
+```bash
+npm run dev
+```
+
+ブラウザで `http://localhost:5173` にアクセスしてください。
+
+## 使い方
+
+1. **アイコン配置**: 左側のパレットからAWSサービスアイコンをキャンバスにドラッグ&ドロップ
+2. **接続線の描画**: アイコン間をクリックして接続線を描画
+3. **AI生成**: 上部のAIバーにプロンプトを入力して構成図を自動生成
+4. **保存・読み込み**: JSONファイルで構成図を保存・読み込み
+5. **手描き**: ペンツールで自由に描画
+
+## 技術スタック
+
+- **React 18** + **TypeScript**
+- **Vite** (ビルドツール)
+- **Rough.js** (手描き風描画)
+- **ESLint** + **Prettier** (コード品質)
+
+## ビルド
+
+```bash
+npm run build
+```
+
+## ライセンス
+
+MIT License
+
+## 貢献
+
+プルリクエストやイシューの報告を歓迎します！
