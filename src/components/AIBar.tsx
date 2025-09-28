@@ -22,7 +22,7 @@ const PROMPT_EXAMPLES = [
 ];
 
 const AIBar: React.FC = () => {
-  const { loadState, setAIGenerating, setAIError, clearAllDiagram } = useAppActions();
+  const { loadState, setAIGenerating, setAIError, clearAllDiagram, clearAllDrawing } = useAppActions();
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<RequestStatus>("idle");
   const [selectedExample, setSelectedExample] = useState("");
@@ -175,6 +175,9 @@ const AIBar: React.FC = () => {
         selectedNodeIds: [],
         selectedFrameIds: [],
       });
+      
+      // Clear pen drawings on successful AI generation
+      clearAllDrawing();
 
       setStatus("success");
     } catch (error) {

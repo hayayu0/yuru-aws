@@ -98,9 +98,7 @@ export const useAppActions = () => {
     dispatch({ type: "SET_EDITING_NODE", payload: nodeId });
   }, [dispatch]);
 
-  const setArrowJustDrawn = useCallback((value: boolean) => {
-    dispatch({ type: "SET_ARROW_JUST_DRAWN", payload: value });
-  }, [dispatch]);
+
 
   const setDrawingContainer = useCallback((container: HTMLElement | null) => {
     dispatch({ type: "SET_DRAWING_CONTAINER", payload: container });
@@ -168,7 +166,6 @@ export const useAppActions = () => {
         drawings: [],
         drawing: {
           active: false,
-          pathEl: null,
           color: "#000000",
           points: [],
         },
@@ -202,7 +199,7 @@ export const useAppActions = () => {
     setNodeToAdd,
     setEditingNodeId,
     setPendingEditNodeId,
-    setArrowJustDrawn,
+
     setDrawingContainer,
     updateDrawing,
     addFreehandPath,

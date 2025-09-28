@@ -200,8 +200,6 @@ export const clearPathDistortionCache = (): void => {
   pathDistortionCache.clear();
 };
 
-
-
 export const createRoughRect = (x: number, y: number, width: number, height: number, options: RoughOptions = {}) => {
   const defaultOptions: RoughOptions = {
     roughness: 2,

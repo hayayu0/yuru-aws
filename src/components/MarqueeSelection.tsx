@@ -25,7 +25,7 @@ const MarqueeSelection: React.FC<MarqueeSelectionProps> = ({ marqueeInfo }) => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 1000
+        zIndex: 300
       }}
     >
       <rect
@@ -33,8 +33,8 @@ const MarqueeSelection: React.FC<MarqueeSelectionProps> = ({ marqueeInfo }) => {
         y={y}
         width={width}
         height={height}
-        fill="rgba(0, 123, 255, 0.1)"
-        stroke="rgba(0, 123, 255, 0.5)"
+        fill="rgba(0, 123, 255, 0.08)"
+        stroke="rgba(0, 123, 255, 0.7)"
         strokeWidth="1"
         strokeDasharray="5,5"
       />

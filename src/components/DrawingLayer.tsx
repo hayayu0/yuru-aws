@@ -10,8 +10,7 @@ const PEN_COLORS: Record<'pen-black' | 'pen-red', string> = {
 const toPointString = (points: { x: number; y: number }[]) =>
   points.map(point => `${point.x},${point.y}`).join(' ');
 
-const getStrokeWidthForColor = (color: string) =>
-  color === PEN_COLORS['pen-red'] ? 3 : 2;
+const getStrokeWidthForColor = () => 2;
 
 const distanceSqToSegment = (
   point: { x: number; y: number },
@@ -189,7 +188,7 @@ const DrawingLayer: React.FC = () => {
         id: Date.now(),
         color: state.drawing.color,
         points: nextPoints,
-        strokeWidth: getStrokeWidthForColor(state.drawing.color),
+        strokeWidth: getStrokeWidthForColor(),
       });
     }
 
@@ -235,7 +234,7 @@ const DrawingLayer: React.FC = () => {
             className="drawing-path"
             points={toPointString(path.points)}
             stroke={path.color}
-            strokeWidth={path.strokeWidth || getStrokeWidthForColor(path.color)}
+            strokeWidth={path.strokeWidth || getStrokeWidthForColor()}
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -246,7 +245,7 @@ const DrawingLayer: React.FC = () => {
             className="drawing-path drawing-path--current"
             points={toPointString(state.drawing.points)}
             stroke={state.drawing.color}
-            strokeWidth={getStrokeWidthForColor(state.drawing.color)}
+            strokeWidth={getStrokeWidthForColor()}
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"

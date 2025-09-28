@@ -2,6 +2,7 @@ import React, { useReducer } from 'react';
 import type { ReactNode } from 'react';
 import type { AppState, AppAction } from '../types';
 import { AppStateContext } from './AppContext';
+import { calculateNextIdFromCollections } from '../utils/diagramNormalization';
 
 // Initial state based on the original app.js
 const initialState: AppState = {
@@ -13,7 +14,7 @@ const initialState: AppState = {
   selectedNodeIds: [],
   selectedFrameIds: [],
   selectedEdgeIds: [],
-  viewBox: { x: 0, y: 0, width: 1200, height: 800 },
+
   pendingEdge: null,
   pendingFrame: null,
   resizeInfo: null,
@@ -22,11 +23,11 @@ const initialState: AppState = {
   nodeToAdd: null,
   editingNodeId: null,
   pendingEditNodeId: null,
-  arrowJustDrawn: true,
+
   drawingContainer: null,
   drawing: {
     active: false,
-    pathEl: null,
+
     color: '#000000',
     points: [],
   },
@@ -38,14 +39,6 @@ const initialState: AppState = {
 };
 
 
-
-function calculateNextId(currentNextId: number, ...collections: Array<Array<{ id: number }>>): number {
-  const maxId = collections.reduce((maxValue, items) => {
-    const collectionMax = items.reduce((currentMax, item) => Math.max(currentMax, item.id), 0);
-    return Math.max(maxValue, collectionMax);
-  }, 0);
-  return Math.max(currentNextId, maxId + 1);
-}
 
 // Reducer function
 function appStateReducer(state: AppState, action: AppAction): AppState {
@@ -60,9 +53,7 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'ADD_NODE': {
-      const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-      const maxExistingId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      const nextId = Math.max(state.nextId, action.payload.id + 1, maxExistingId + 1);
+      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
       return {
         ...state,
         nodes: [...state.nodes, action.payload],
@@ -100,9 +91,7 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'ADD_FRAME': {
-      const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-      const maxExistingId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      const nextId = Math.max(state.nextId, action.payload.id + 1, maxExistingId + 1);
+      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
       return {
         ...state,
         frames: [...state.frames, action.payload],
@@ -135,9 +124,7 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'ADD_EDGE': {
-      const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-      const maxExistingId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      const nextId = Math.max(state.nextId, action.payload.id + 1, maxExistingId + 1);
+      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
       return {
         ...state,
         edges: [...state.edges, action.payload],
@@ -184,8 +171,7 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     case 'SET_PENDING_EDIT_NODE':
       return { ...state, pendingEditNodeId: action.payload };
 
-    case 'SET_ARROW_JUST_DRAWN':
-      return { ...state, arrowJustDrawn: action.payload };
+
 
     case 'SET_DRAWING_CONTAINER':
       return { ...state, drawingContainer: action.payload };
@@ -221,13 +207,7 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
       const frames = action.payload.frames ?? [];
       const edges = action.payload.edges ?? [];
       
-      const allIds = [
-        ...nodes.map(n => n.id),
-        ...frames.map(f => f.id),
-        ...edges.map(e => e.id)
-      ];
-      
-      const nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
+      const nextId = calculateNextIdFromCollections(1, nodes, frames, edges);
 
       return {
         ...state,

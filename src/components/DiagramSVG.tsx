@@ -33,30 +33,30 @@ const DiagramSVG: React.FC<DiagramSVGProps> = ({ svgRef }) => {
     return aZLayer - bZLayer;
   });
 
-  const handleNodeSelect = (nodeId: number, event: React.MouseEvent) => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey) {
-      if (state.selectedNodeIds.includes(nodeId)) {
-        setSelectedNodes(state.selectedNodeIds.filter(id => id !== nodeId));
+  const handleElementSelect = (id: number, event: React.MouseEvent, type: 'node' | 'frame') => {
+    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey;
+    const selectedIds = type === 'node' ? state.selectedNodeIds : state.selectedFrameIds;
+    const setSelected = type === 'node' ? setSelectedNodes : setSelectedFrames;
+    const clearOther = type === 'node' ? setSelectedFrames : setSelectedNodes;
+
+    if (isMultiSelect) {
+      if (selectedIds.includes(id)) {
+        setSelected(selectedIds.filter(selectedId => selectedId !== id));
       } else {
-        setSelectedNodes([...state.selectedNodeIds, nodeId]);
+        setSelected([...selectedIds, id]);
       }
-    } else if (!state.selectedNodeIds.includes(nodeId)) {
-      setSelectedNodes([nodeId]);
-      setSelectedFrames([]);
+    } else if (!selectedIds.includes(id)) {
+      setSelected([id]);
+      clearOther([]);
     }
   };
 
+  const handleNodeSelect = (nodeId: number, event: React.MouseEvent) => {
+    handleElementSelect(nodeId, event, 'node');
+  };
+
   const handleFrameSelect = (frameId: number, event: React.MouseEvent) => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey) {
-      if (state.selectedFrameIds.includes(frameId)) {
-        setSelectedFrames(state.selectedFrameIds.filter(id => id !== frameId));
-      } else {
-        setSelectedFrames([...state.selectedFrameIds, frameId]);
-      }
-    } else if (!state.selectedFrameIds.includes(frameId)) {
-      setSelectedFrames([frameId]);
-      setSelectedNodes([]);
-    }
+    handleElementSelect(frameId, event, 'frame');
   };
 
   const handleNodeDoubleClick = (nodeId: number, event: React.MouseEvent) => {

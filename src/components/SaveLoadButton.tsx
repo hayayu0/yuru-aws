@@ -13,7 +13,7 @@ import { validateJsonString } from "../utils/security";
 
 const SaveLoadButton: React.FC = () => {
   const { state } = useAppState();
-  const { loadState } = useAppActions();
+  const { loadState, clearAllDrawing } = useAppActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const exportToJSON = () => {
@@ -85,6 +85,9 @@ const SaveLoadButton: React.FC = () => {
           selectedNodeIds: [],
           selectedFrameIds: [],
         });
+        
+        // Clear pen drawings on successful JSON load
+        clearAllDrawing();
       } catch (error) {
         alert("Error: Could not parse JSON file.");
         console.error(error);

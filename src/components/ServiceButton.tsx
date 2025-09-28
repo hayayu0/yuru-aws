@@ -28,7 +28,6 @@ const ServiceButton: React.FC<ServiceButtonProps> = ({ serviceName }) => {
     if (state.drawing && state.drawing.active) {
       updateDrawing({
         active: false,
-        pathEl: null,
         points: [],
       });
     }

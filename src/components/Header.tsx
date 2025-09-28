@@ -1,10 +1,11 @@
 import React from 'react';
-import ServiceName from './ServiceName';
 
 const Header: React.FC = () => {
   return (
     <header className="toolnamebar" role="banner">
-      <ServiceName />
+      <div className="service-name">
+        ゆるAWS (手書き風のAWS構成図)
+      </div>
     </header>
   );
 };
