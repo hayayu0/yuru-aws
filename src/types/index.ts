@@ -109,6 +109,7 @@ export interface AppState {
   marqueeInfo: MarqueeInfo | null;
   nodeToAdd: string | null;
   editingNodeId: number | null;
+  pendingEditNodeId: number | null;
   arrowJustDrawn: boolean;
   drawingContainer: HTMLElement | null;
   
@@ -152,6 +153,7 @@ export type AppAction =
   | { type: 'SET_MARQUEE_INFO'; payload: MarqueeInfo | null }
   | { type: 'SET_NODE_TO_ADD'; payload: string | null }
   | { type: 'SET_EDITING_NODE'; payload: number | null }
+  | { type: 'SET_PENDING_EDIT_NODE'; payload: number | null }
   | { type: 'SET_ARROW_JUST_DRAWN'; payload: boolean }
   | { type: 'SET_DRAWING_CONTAINER'; payload: HTMLElement | null }
   | { type: 'UPDATE_DRAWING'; payload: Partial<DrawingState> }

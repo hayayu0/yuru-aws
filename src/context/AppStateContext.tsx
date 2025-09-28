@@ -21,6 +21,7 @@ const initialState: AppState = {
   marqueeInfo: null,
   nodeToAdd: null,
   editingNodeId: null,
+  pendingEditNodeId: null,
   arrowJustDrawn: true,
   drawingContainer: null,
   drawing: {
@@ -180,6 +181,9 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     case 'SET_EDITING_NODE':
       return { ...state, editingNodeId: action.payload };
 
+    case 'SET_PENDING_EDIT_NODE':
+      return { ...state, pendingEditNodeId: action.payload };
+
     case 'SET_ARROW_JUST_DRAWN':
       return { ...state, arrowJustDrawn: action.payload };
 
@@ -213,9 +217,17 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
 
 
     case 'LOAD_STATE': {
-      const nextId = action.payload.nextId !== undefined
-        ? action.payload.nextId
-        : calculateNextId(1, action.payload.nodes ?? state.nodes, action.payload.frames ?? state.frames, action.payload.edges ?? state.edges);
+      const nodes = action.payload.nodes ?? [];
+      const frames = action.payload.frames ?? [];
+      const edges = action.payload.edges ?? [];
+      
+      const allIds = [
+        ...nodes.map(n => n.id),
+        ...frames.map(f => f.id),
+        ...edges.map(e => e.id)
+      ];
+      
+      const nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
 
       return {
         ...state,

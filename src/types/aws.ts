@@ -18,6 +18,8 @@ export const awsServices: AWSServices = {
   RDS: { buttonGroup: "Frequent" },
   Users: { buttonGroup: "Frequent", buttonText: "ユーザー" },
   Internet: { buttonGroup: "Frequent", buttonText: "インターネット" },
+  InternetGW: { buttonGroup: "Frequent", buttonText: "Internet GW" },
+  OtherService: { buttonGroup: "Frequent", buttonText: "その他" },
   Account: { buttonGroup: "Frame", buttonText: "アカウント", isFrame: true, zLayer: 20 },
   Region: { buttonGroup: "Frame", buttonText: "リージョン", isFrame: true, zLayer: 40 },
   AZ: { buttonGroup: "Frame", isFrame: true, zLayer: 60, displayIcon: false},
@@ -28,7 +30,6 @@ export const awsServices: AWSServices = {
   StepFunctions: { buttonGroup: "Frame", isFrame: true, zLayer: 60, buttonText: "Step Functions" },
   Building: { buttonGroup: "Frame", buttonText: "データセンター", isFrame: true, zLayer: 20,  },
   GeneralGroup: { buttonGroup: "Frame", buttonText: "グループ", isFrame: true, displayIcon: false, zLayer: 90,  },
-  InternetGW: { buttonGroup: "Network", buttonText: "Internet GW" },
   NATGW: { buttonGroup: "Network", buttonText: "NAT GW" },
   VPCEndpoint: { buttonGroup: "Network", buttonText: "VPC Endpoint" },
   Route53: { buttonGroup: "Network" },
@@ -96,7 +97,6 @@ export const awsServices: AWSServices = {
   QuickSight: { buttonGroup: "Others" },
   Athena: { buttonGroup: "Others" },
   AMI: { buttonGroup: "Others" },
-  OtherService: { buttonGroup: "Others", buttonText: "その他" },
 };
 
 export const groupOrder = [

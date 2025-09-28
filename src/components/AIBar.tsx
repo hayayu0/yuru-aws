@@ -26,6 +26,43 @@ const AIBar: React.FC = () => {
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<RequestStatus>("idle");
   const [selectedExample, setSelectedExample] = useState("");
+  const [configExists, setConfigExists] = useState<boolean | null>(null);
+
+  // config.jsonの存在チェック
+  React.useEffect(() => {
+    const checkConfig = async () => {
+      try {
+        const response = await fetch('./config.json');
+        const responseText = await response.text();
+        
+        // JSONとして解析できるかチェック
+        try {
+          const config = JSON.parse(responseText);
+          // AI_PROMPT_ENDPOINTが存在し、空でない場合のみ有効とする
+          const hasValidEndpoint = config.AI_PROMPT_ENDPOINT && 
+                                  typeof config.AI_PROMPT_ENDPOINT === 'string' && 
+                                  config.AI_PROMPT_ENDPOINT.trim() !== '' &&
+                                  config.AI_PROMPT_ENDPOINT !== 'YOUR_AI_ENDPOINT_URL_HERE';
+          setConfigExists(response.ok && hasValidEndpoint);
+        } catch {
+          setConfigExists(false);
+        }
+      } catch (error) {
+        setConfigExists(false);
+      }
+    };
+    checkConfig();
+  }, []);
+
+  // config.jsonが存在しない場合は非表示
+  if (configExists === false) {
+    return null;
+  }
+
+  // 読み込み中は何も表示しない
+  if (configExists === null) {
+    return null;
+  }
 
   const handleExampleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
@@ -56,15 +93,18 @@ const AIBar: React.FC = () => {
     setAIGenerating(true);
 
     try {
-      const configResponse = await fetch('/config.json');
+      const configResponse = await fetch('./config.json');
       const config = await configResponse.json();
       const AI_PROMPT_ENDPOINT = config.AI_PROMPT_ENDPOINT;
+      const AI_PROMPT_PREFIX = config.AI_PROMPT_PREFIX || '';
+      const AI_PROMPT_POSTFIX = config.AI_PROMPT_POSTFIX || '';
       
       if (!AI_PROMPT_ENDPOINT) {
         throw new Error('AI endpoint not configured');
       }
 
       const sanitizedPrompt = sanitizeInput(trimmed);
+      const fullPrompt = AI_PROMPT_PREFIX + sanitizedPrompt + AI_PROMPT_POSTFIX;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -74,7 +114,7 @@ const AIBar: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: sanitizedPrompt }),
+        body: JSON.stringify({ prompt: fullPrompt }),
         signal: controller.signal,
       });
       

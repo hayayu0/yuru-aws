@@ -73,8 +73,8 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
     const wrapperRect = wrapperRef.current.getBoundingClientRect();
 
     setPosition({
-      left: textRect.left - wrapperRect.left,
-      top: textRect.bottom - wrapperRect.top + 5,
+      left: textRect.left - wrapperRect.left - 8,
+      top: textRect.top - wrapperRect.top - 6,
     });
   }, [editingId, targetElement, svgRef, wrapperRef, state.nodes, state.frames]);
 
@@ -130,9 +130,12 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
       if (event.key === 'Escape') {
         event.preventDefault();
         closeEditor();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        handleSubmit(event as any);
       }
     },
-    [closeEditor]
+    [closeEditor, handleSubmit]
   );
 
   if (editingId === null || !targetElement || !wrapperRef.current) {
@@ -143,13 +146,21 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
     <div
       ref={editorRef}
       className="inline-text-editor"
-      style={{ left: position.left, top: position.top }}
+      style={{ 
+        left: position.left, 
+        top: position.top,
+        margin: 0,
+        padding: 0,
+        display: 'inline-block',
+        border: '1px solid #ccc',
+        borderRadius: '3px'
+      }}
       role="dialog"
       aria-label="Edit label"
     >
       <form
         onSubmit={handleSubmit}
-        style={{ display: 'flex', gap: '6px', alignItems: 'center', margin: 0 }}
+        style={{ margin: 0, padding: 0 }}
       >
         <input
           ref={inputRef}
@@ -159,7 +170,6 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <button type="submit">OK</button>
       </form>
     </div>
   );

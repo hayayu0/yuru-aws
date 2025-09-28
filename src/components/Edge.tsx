@@ -98,10 +98,14 @@ const Edge: React.FC<EdgeProps> = ({
                 return op.data.length >= 2 && op.data[0] !== undefined && op.data[1] !== undefined ? `M ${op.data[0].toFixed(2)} ${op.data[1].toFixed(2)}` : '';
               case 'line':
                 return op.data.length >= 2 && op.data[0] !== undefined && op.data[1] !== undefined ? `L ${op.data[0].toFixed(2)} ${op.data[1].toFixed(2)}` : '';
-              case 'curve':
-                return op.data.length >= 4 && op.data[0] !== undefined && op.data[1] !== undefined && op.data[2] !== undefined && op.data[3] !== undefined ? `Q ${op.data[0].toFixed(2)} ${op.data[1].toFixed(2)} ${op.data[2].toFixed(2)} ${op.data[3].toFixed(2)}` : '';
-              case 'bcurveTo':
-                return op.data.length >= 6 && op.data[0] !== undefined && op.data[1] !== undefined && op.data[2] !== undefined && op.data[3] !== undefined && op.data[4] !== undefined && op.data[5] !== undefined ? `C ${op.data[0].toFixed(2)} ${op.data[1].toFixed(2)} ${op.data[2].toFixed(2)} ${op.data[3].toFixed(2)} ${op.data[4].toFixed(2)} ${op.data[5].toFixed(2)}` : '';
+              case 'curve': {
+                const [x1, y1, x2, y2] = op.data;
+                return op.data.length >= 4 && x1 !== undefined && y1 !== undefined && x2 !== undefined && y2 !== undefined ? `Q ${x1.toFixed(2)} ${y1.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}` : '';
+              }
+              case 'bcurveTo': {
+                const [x1, y1, x2, y2, x3, y3] = op.data;
+                return op.data.length >= 6 && x1 !== undefined && y1 !== undefined && x2 !== undefined && y2 !== undefined && x3 !== undefined && y3 !== undefined ? `C ${x1.toFixed(2)} ${y1.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)} ${x3.toFixed(2)} ${y3.toFixed(2)}` : '';
+              }
               default:
                 return '';
             }

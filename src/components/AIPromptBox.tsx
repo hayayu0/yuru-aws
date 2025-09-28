@@ -8,8 +8,7 @@ import {
 } from "../utils/diagramNormalization";
 import { buildPrompt, ensureSchema } from "../utils/promptGenerator";
 
-const AI_PROMPT_ENDPOINT =
-  import.meta.env.VITE_AI_PROMPT_ENDPOINT ?? "/api/ai/diagram";
+const AI_PROMPT_ENDPOINT = import.meta.env.VITE_AI_PROMPT_ENDPOINT;
 
 type RequestStatus = "idle" | "loading" | "success" | "error";
 

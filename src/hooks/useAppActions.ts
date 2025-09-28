@@ -30,6 +30,10 @@ export const useAppActions = () => {
     dispatch({ type: "ADD_NODE", payload: node });
   }, [dispatch]);
 
+  const setPendingEditNodeId = useCallback((nodeId: number | null) => {
+    dispatch({ type: "SET_PENDING_EDIT_NODE", payload: nodeId });
+  }, [dispatch]);
+
   const updateNode = useCallback((id: number, updates: Partial<Node>) => {
     dispatch({ type: "UPDATE_NODE", payload: { id, updates } });
   }, [dispatch]);
@@ -197,6 +201,7 @@ export const useAppActions = () => {
     setMarqueeInfo,
     setNodeToAdd,
     setEditingNodeId,
+    setPendingEditNodeId,
     setArrowJustDrawn,
     setDrawingContainer,
     updateDrawing,

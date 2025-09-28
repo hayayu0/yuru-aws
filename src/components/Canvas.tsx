@@ -34,6 +34,8 @@ const Canvas: React.FC = () => {
     deleteNodes,
     deleteFrames,
     deleteEdges,
+    setPendingEditNodeId,
+    setEditingNodeId,
   } = useAppActions();
 
   const resetCursor = useCallback(() => {
@@ -68,10 +70,7 @@ const Canvas: React.FC = () => {
         return;
       }
 
-      // Calculate next available ID
-      const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-      const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      const nextAvailableId = Math.max(state.nextId, maxId + 1);
+      const nextAvailableId = state.nextId;
 
       const newNode: Node = {
         id: nextAvailableId,
@@ -82,6 +81,7 @@ const Canvas: React.FC = () => {
       };
 
       addNode(newNode);
+      setPendingEditNodeId(nextAvailableId); // 編集待機状態に設定
       setNodeToAdd(null);
       resetCursor();
       return;
@@ -431,6 +431,13 @@ const Canvas: React.FC = () => {
   const handleMouseUp = useCallback((event: MouseEvent) => {
     const coords = getSVGCoordinates(event, svgRef.current);
 
+    // 編集待機中のノードがある場合、編集モードに入る
+    if (state.pendingEditNodeId !== null) {
+      setEditingNodeId(state.pendingEditNodeId);
+      setPendingEditNodeId(null);
+      return;
+    }
+
     if (state.pendingFrame) {
       const { kind, startX, startY } = state.pendingFrame;
       setPendingFrame(null);
@@ -450,10 +457,7 @@ const Canvas: React.FC = () => {
         height = elementSize.frameMinHeight;
       }
 
-      // Calculate next available ID
-      const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-      const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      const nextAvailableId = Math.max(state.nextId, maxId + 1);
+      const nextAvailableId = state.nextId;
       
       addFrame({
         id: nextAvailableId,
@@ -514,6 +518,7 @@ const Canvas: React.FC = () => {
     state.selectedFrameIds,
     state.selectedNodeIds,
     state.pendingFrame,
+    state.pendingEditNodeId,
     addFrame,
     resetCursor,
     setDragInfo,
@@ -524,6 +529,8 @@ const Canvas: React.FC = () => {
     setSelectedFrames,
     setSelectedNodes,
     setPendingFrame,
+    setEditingNodeId,
+    setPendingEditNodeId,
   ]);
 
   // Keyboard event handler

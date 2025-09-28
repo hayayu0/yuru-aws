@@ -17,17 +17,28 @@ const MarqueeSelection: React.FC<MarqueeSelectionProps> = ({ marqueeInfo }) => {
   const height = Math.abs(marqueeInfo.currentY - marqueeInfo.startY);
 
   return (
-    <rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      fill="rgba(0, 123, 255, 0.1)"
-      stroke="rgba(0, 123, 255, 0.5)"
-      strokeWidth="1"
-      strokeDasharray="5,5"
-      pointerEvents="none"
-    />
+    <svg
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1000
+      }}
+    >
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill="rgba(0, 123, 255, 0.1)"
+        stroke="rgba(0, 123, 255, 0.5)"
+        strokeWidth="1"
+        strokeDasharray="5,5"
+      />
+    </svg>
   );
 };
 
