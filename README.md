@@ -38,10 +38,10 @@ npm install
 
 ### 3. 設定ファイルの準備
 ```bash
-cp public/config.example.json public/config.json
+cp public/config-example.json public/config.json
 ```
 
-`public/config.json` を編集してAIエンドポイントを設定してください：
+`public/config.json` の AI_PROMPT_ENDPOINT の値を編集してAIエンドポイントを設定してください：
 ```json
 {
   "AI_PROMPT_ENDPOINT": "YOUR_AI_ENDPOINT_URL_HERE"
@@ -82,4 +82,4 @@ MIT License
 
 ## 貢献
 
-プルリクエストやイシューの報告を歓迎します！
+Issueの報告を歓迎します
