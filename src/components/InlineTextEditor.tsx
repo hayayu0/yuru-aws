@@ -20,6 +20,7 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
 
   const editorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastDoubleClickRef = useRef<number>(0);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [value, setValue] = useState('');
 
@@ -79,10 +80,42 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ svgRef, wrapperRef 
   }, [editingId, targetElement, svgRef, wrapperRef, state.nodes, state.frames]);
 
   useEffect(() => {
-    if (editingId !== null && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    const markDoubleClick = () => {
+      lastDoubleClickRef.current = typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+    };
+
+    document.addEventListener('dblclick', markDoubleClick, true);
+    return () => document.removeEventListener('dblclick', markDoubleClick, true);
+  }, []);
+
+  useEffect(() => {
+    if (editingId === null || !inputRef.current) {
+      return;
     }
+
+    const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
+
+    if (now - lastDoubleClickRef.current > 250) {
+      return;
+    }
+
+    const input = inputRef.current;
+    const focusInput = () => {
+      input.focus();
+      input.select();
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(focusInput);
+    } else {
+      focusInput();
+    }
+
+    lastDoubleClickRef.current = 0;
   }, [editingId]);
 
   useEffect(() => {

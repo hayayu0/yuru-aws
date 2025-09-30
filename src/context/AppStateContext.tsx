@@ -1,16 +1,40 @@
 import React, { useReducer } from 'react';
 import type { ReactNode } from 'react';
 import type { AppState, AppAction } from '../types';
+import { MAX_ELEMENTS } from '../types';
 import { AppStateContext } from './AppContext';
 import { calculateNextIdFromCollections } from '../utils/diagramNormalization';
+
+// Helper functions for ID management
+const getNextAvailableId = (usedIds: boolean[]): number => {
+  for (let i = 1; i < usedIds.length; i++) {
+    if (!usedIds[i]) {
+      return i;
+    }
+  }
+  throw new Error('No available IDs');
+};
+
+const markIdAsUsed = (usedIds: boolean[], id: number): boolean[] => {
+  const newUsedIds = [...usedIds];
+  newUsedIds[id] = true;
+  return newUsedIds;
+};
+
+const markIdAsUnused = (usedIds: boolean[], id: number): boolean[] => {
+  const newUsedIds = [...usedIds];
+  newUsedIds[id] = false;
+  return newUsedIds;
+};
 
 // Initial state based on the original app.js
 const initialState: AppState = {
   nodes: [],
   frames: [],
   edges: [],
-  nextId: 1,
+  usedIds: new Array(MAX_ELEMENTS).fill(false),
   activeTool: 'select',
+  interactionMode: 'select',
   selectedNodeIds: [],
   selectedFrameIds: [],
   selectedEdgeIds: [],
@@ -27,7 +51,6 @@ const initialState: AppState = {
   drawingContainer: null,
   drawing: {
     active: false,
-
     color: '#000000',
     points: [],
   },
@@ -37,8 +60,6 @@ const initialState: AppState = {
   aiError: false,
   aiErrorMessage: undefined,
 };
-
-
 
 // Reducer function
 function appStateReducer(state: AppState, action: AppAction): AppState {
@@ -52,13 +73,17 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
       };
     }
 
+    case 'SET_INTERACTION_MODE':
+      return { ...state, interactionMode: action.payload };
+
     case 'ADD_NODE': {
-      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
+      const availableId = getNextAvailableId(state.usedIds);
+      const nodeWithId = { ...action.payload, id: availableId };
       return {
         ...state,
-        nodes: [...state.nodes, action.payload],
-        nextId,
-        selectedNodeIds: [action.payload.id],
+        nodes: [...state.nodes, nodeWithId],
+        usedIds: markIdAsUsed(state.usedIds, availableId),
+        selectedNodeIds: [availableId],
         selectedFrameIds: [],
         selectedEdgeIds: [],
       };
@@ -76,12 +101,17 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     
     case 'DELETE_NODES': {
       const nodeIdsToDelete = new Set(action.payload);
+      let newUsedIds = state.usedIds;
+      nodeIdsToDelete.forEach(id => {
+        newUsedIds = markIdAsUnused(newUsedIds, id);
+      });
       return {
         ...state,
         nodes: state.nodes.filter(node => !nodeIdsToDelete.has(node.id)),
         edges: state.edges.filter(edge =>
           !nodeIdsToDelete.has(edge.from) && !nodeIdsToDelete.has(edge.to)
         ),
+        usedIds: newUsedIds,
         selectedNodeIds: state.selectedNodeIds.filter(id => !nodeIdsToDelete.has(id)),
         editingNodeId:
           state.editingNodeId !== null && nodeIdsToDelete.has(state.editingNodeId)
@@ -91,12 +121,13 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'ADD_FRAME': {
-      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
+      const availableId = getNextAvailableId(state.usedIds);
+      const frameWithId = { ...action.payload, id: availableId };
       return {
         ...state,
-        frames: [...state.frames, action.payload],
-        nextId,
-        selectedFrameIds: [action.payload.id],
+        frames: [...state.frames, frameWithId],
+        usedIds: markIdAsUsed(state.usedIds, availableId),
+        selectedFrameIds: [availableId],
         selectedNodeIds: [],
         selectedEdgeIds: [],
       };
@@ -114,29 +145,40 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
 
     case 'DELETE_FRAMES': {
       const frameIdsToDelete = new Set(action.payload);
+      let newUsedIds = state.usedIds;
+      frameIdsToDelete.forEach(id => {
+        newUsedIds = markIdAsUnused(newUsedIds, id);
+      });
       const shouldClearResizeInfo = state.resizeInfo && frameIdsToDelete.has(state.resizeInfo.frameId);
       return {
         ...state,
         frames: state.frames.filter(frame => !frameIdsToDelete.has(frame.id)),
+        usedIds: newUsedIds,
         selectedFrameIds: state.selectedFrameIds.filter(id => !frameIdsToDelete.has(id)),
         resizeInfo: shouldClearResizeInfo ? null : state.resizeInfo,
       };
     }
 
     case 'ADD_EDGE': {
-      const nextId = calculateNextIdFromCollections(state.nextId, state.nodes, state.frames, state.edges, [action.payload]);
+      const availableId = getNextAvailableId(state.usedIds);
+      const edgeWithId = { ...action.payload, id: availableId };
       return {
         ...state,
-        edges: [...state.edges, action.payload],
-        nextId,
+        edges: [...state.edges, edgeWithId],
+        usedIds: markIdAsUsed(state.usedIds, availableId),
       };
     }
     
     case 'DELETE_EDGES': {
       const edgeIdsToDelete = new Set(action.payload);
+      let newUsedIds = state.usedIds;
+      edgeIdsToDelete.forEach(id => {
+        newUsedIds = markIdAsUnused(newUsedIds, id);
+      });
       return {
         ...state,
         edges: state.edges.filter(edge => !edgeIdsToDelete.has(edge.id)),
+        usedIds: newUsedIds,
         selectedEdgeIds: state.selectedEdgeIds.filter(id => !edgeIdsToDelete.has(id)),
       };
     }
@@ -207,13 +249,41 @@ function appStateReducer(state: AppState, action: AppAction): AppState {
       const frames = action.payload.frames ?? [];
       const edges = action.payload.edges ?? [];
       
-      const nextId = calculateNextIdFromCollections(1, nodes, frames, edges);
+      let newUsedIds = new Array(MAX_ELEMENTS).fill(false);
+      
+      const processedNodes = nodes.map(node => {
+        const originalId = node.id || 1; // Convert 0 to 1
+        const id = (originalId > 0 && !newUsedIds[originalId]) ? originalId : getNextAvailableId(newUsedIds);
+        newUsedIds[id] = true;
+        return { ...node, id };
+      });
+      
+      const processedFrames = frames.map(frame => {
+        const originalId = frame.id || 1; // Convert 0 to 1
+        const id = (originalId > 0 && !newUsedIds[originalId]) ? originalId : getNextAvailableId(newUsedIds);
+        newUsedIds[id] = true;
+        return { ...frame, id };
+      });
+      
+      const processedEdges = edges.filter(edge => {
+        // Only include edges where both from and to exist in usedIds
+        return newUsedIds[edge.from] && newUsedIds[edge.to];
+      }).map(edge => {
+        const originalId = edge.id || 1; // Convert 0 to 1
+        const id = (originalId > 0 && !newUsedIds[originalId]) ? originalId : getNextAvailableId(newUsedIds);
+        newUsedIds[id] = true;
+        return { ...edge, id };
+      });
 
       return {
         ...state,
-        ...action.payload,
-        nextId,
+        nodes: processedNodes,
+        frames: processedFrames,
+        edges: processedEdges,
+        usedIds: newUsedIds,
         editingNodeId: null,
+        activeTool: 'select',
+        interactionMode: 'select',
       };
     }
     

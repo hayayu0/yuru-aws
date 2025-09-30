@@ -1,314 +1,41 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { useAppState } from '../hooks/useAppState';
 import { useAppActions } from '../hooks/useAppActions';
-import { awsServices, elementSize } from '../types/aws';
+import { useMouseEventManager } from '../hooks/useMouseEventManager';
 import { getSVGCoordinates } from '../utils/coordinates';
-import { getElementsInMarquee, getEdgesInMarquee } from '../utils/marqueeSelection';
+import { elementSize } from '../types/aws';
 import GridBackground from './GridBackground';
 import DiagramSVG from './DiagramSVG';
 import MarqueeSelection from './MarqueeSelection';
 import InlineTextEditor from './InlineTextEditor';
-import type { Node } from '../types';
 
 const Canvas: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const pendingFrameRef = useRef<{ kind: string; startX: number; startY: number } | null>(null);
   const { state } = useAppState();
   const {
-    addNode,
-    addFrame,
-    setNodeToAdd,
-    setSelectedNodes,
-    setSelectedFrames,
-    setSelectedEdges,
-    setPendingEdge,
-    setPendingFrame,
-    addEdge,
-    setDragInfo,
-    setResizeInfo,
     setMarqueeInfo,
-    setActiveTool,
     updateNode,
     updateFrame,
     deleteNodes,
     deleteFrames,
     deleteEdges,
-    setPendingEditNodeId,
-    setEditingNodeId,
-  } = useAppActions();
-
-  const resetCursor = useCallback(() => {
-    if (svgRef.current) {
-      svgRef.current.style.cursor = state.activeTool === 'arrow' ? 'crosshair' : 'default';
-    }
-  }, [state.activeTool]);
-
-  // Mouse event handlers with useCallback to prevent unnecessary re-renders
-  const handleMouseDown = useCallback((event: MouseEvent) => {
-    if (event.button !== 0) return; // Only left-click
-
-    const coords = getSVGCoordinates(event, svgRef.current);
-    const element = (event.target as Element).closest('[data-type]');
-    const elementType = element?.getAttribute('data-type');
-    const resizeHandle = (event.target as Element).closest('.resize-handle');
-
-    // Priority 1: Add a new element if one is pending
-    if (state.nodeToAdd) {
-      const serviceConfig = awsServices[state.nodeToAdd];
-      if (!serviceConfig) return;
-
-      if (serviceConfig.isFrame) {
-        setPendingFrame({
-          kind: state.nodeToAdd,
-          startX: coords.x,
-          startY: coords.y,
-          currentX: coords.x,
-          currentY: coords.y,
-        });
-        event.stopPropagation();
-        return;
-      }
-
-      const nextAvailableId = state.nextId;
-
-      const newNode: Node = {
-        id: nextAvailableId,
-        kind: state.nodeToAdd,
-        x: coords.x - elementSize.defaultNodeWidth / 2,
-        y: coords.y - elementSize.defaultNodeHeight / 2,
-        label: null,
-      };
-
-      addNode(newNode);
-      setPendingEditNodeId(nextAvailableId); // 編集待機状態に設定
-      setNodeToAdd(null);
-      resetCursor();
-      return;
-    }
-
-    // Handle different tools
-    if (state.activeTool === 'select') {
-      // Priority 1: Check if clicked on a resize handle
-      if (resizeHandle) {
-        const frameId = parseInt(resizeHandle.getAttribute('data-frame-id') || '0', 10);
-        const handle = resizeHandle.getAttribute('data-handle') || '';
-        const frame = state.frames.find(f => f.id === frameId);
-
-        if (frame) {
-          setResizeInfo({
-            frameId,
-            handle,
-            startX: coords.x,
-            startY: coords.y,
-            startWidth: frame.width,
-            startHeight: frame.height,
-            startFrameX: frame.x,
-            startFrameY: frame.y,
-          });
-
-          event.stopPropagation();
-          return;
-        }
-      }
-
-      // Priority 2: Check if clicked on an edge
-      const edgeTarget = (event.target as Element).closest('.edge-path');
-      if (edgeTarget) {
-        const edgeId = parseInt(edgeTarget.getAttribute('data-edge-id') || '0', 10);
-
-        if (!event.shiftKey) {
-          setSelectedEdges([edgeId]);
-          setSelectedNodes([]);
-          setSelectedFrames([]);
-        } else {
-          if (state.selectedEdgeIds.includes(edgeId)) {
-            setSelectedEdges(state.selectedEdgeIds.filter(id => id !== edgeId));
-          } else {
-            setSelectedEdges([...state.selectedEdgeIds, edgeId]);
-          }
-        }
-        return;
-      }
-
-      // Priority 3: Check if clicked on a frame or node
-      if (element && elementType) {
-        const id = parseInt(element.getAttribute('data-id') || '0', 10);
-
-        if (elementType === 'frame') {
-          const frame = state.frames.find(f => f.id === id);
-          if (!frame) {
-            return;
-          }
-
-          if (state.selectedEdgeIds.length > 0) {
-            setSelectedEdges([]);
-          }
-
-          const frameAlreadySelected = state.selectedFrameIds.includes(id);
-
-          if (!event.shiftKey) {
-            if (!frameAlreadySelected) {
-              setSelectedFrames([id]);
-              setSelectedNodes([]);
-            }
-          } else {
-            setSelectedFrames(frameAlreadySelected
-              ? state.selectedFrameIds.filter(frameId => frameId !== id)
-              : [...state.selectedFrameIds, id]);
-          }
-
-          const dragFrameIds = frameAlreadySelected ? state.selectedFrameIds : [id];
-          const dragNodeIds = frameAlreadySelected ? state.selectedNodeIds : [];
-
-          const framePositions: { [frameId: number]: { x: number; y: number } } = {};
-          dragFrameIds.forEach(frameId => {
-            const dragFrame = state.frames.find(f => f.id === frameId);
-            if (dragFrame) {
-              framePositions[frameId] = { x: dragFrame.x, y: dragFrame.y };
-            }
-          });
-
-          const nodePositions: { [nodeId: number]: { x: number; y: number } } = {};
-          dragNodeIds.forEach(nodeId => {
-            const dragNode = state.nodes.find(n => n.id === nodeId);
-            if (dragNode) {
-              nodePositions[nodeId] = { x: dragNode.x, y: dragNode.y };
-            }
-          });
-
-          setDragInfo({
-            nodeIds: dragNodeIds,
-            frameIds: dragFrameIds,
-            startX: coords.x,
-            startY: coords.y,
-            nodePositions,
-            framePositions,
-          });
-          return;
-        }
-
-        if (elementType === 'node' && element) {
-          const node = state.nodes.find(n => n.id === id);
-          if (!node) {
-            return;
-          }
-
-          if (state.selectedEdgeIds.length > 0) {
-            setSelectedEdges([]);
-          }
-
-          const nodeAlreadySelected = state.selectedNodeIds.includes(id);
-
-          if (!event.shiftKey) {
-            if (!nodeAlreadySelected) {
-              setSelectedNodes([id]);
-              setSelectedFrames([]);
-            }
-          } else {
-            setSelectedNodes(nodeAlreadySelected
-              ? state.selectedNodeIds.filter(nodeId => nodeId !== id)
-              : [...state.selectedNodeIds, id]);
-          }
-
-          const dragNodeIds = nodeAlreadySelected ? state.selectedNodeIds : [id];
-          const dragFrameIds = nodeAlreadySelected ? state.selectedFrameIds : [];
-
-          const nodePositions: { [nodeId: number]: { x: number; y: number } } = {};
-          dragNodeIds.forEach(nodeId => {
-            const dragNode = state.nodes.find(n => n.id === nodeId);
-            if (dragNode) {
-              nodePositions[nodeId] = { x: dragNode.x, y: dragNode.y };
-            }
-          });
-
-          const framePositions: { [frameId: number]: { x: number; y: number } } = {};
-          dragFrameIds.forEach(frameId => {
-            const dragFrame = state.frames.find(f => f.id === frameId);
-            if (dragFrame) {
-              framePositions[frameId] = { x: dragFrame.x, y: dragFrame.y };
-            }
-          });
-
-          setDragInfo({
-            nodeIds: dragNodeIds,
-            frameIds: dragFrameIds,
-            startX: coords.x,
-            startY: coords.y,
-            nodePositions,
-            framePositions,
-          });
-          return;
-        }
-      }
-
-      // Clicked on empty space: clear selection (unless shift) and start marquee
-      if (!event.shiftKey) {
-        setSelectedNodes([]);
-        setSelectedFrames([]);
-        setSelectedEdges([]);
-      }
-
-      setMarqueeInfo({
-        startX: coords.x,
-        startY: coords.y,
-        currentX: coords.x,
-        currentY: coords.y,
-        isActive: true,
-      });
-    } else if (state.activeTool === 'arrow') {
-      if ((elementType === 'node' || elementType === 'frame') && element) {
-        const elementId = parseInt(element.getAttribute('data-id') || '0', 10);
-
-        if (!state.pendingEdge) {
-          setPendingEdge({
-            from: elementId,
-            initialMousePos: coords,
-          });
-        } else if (state.pendingEdge.from !== elementId) {
-          // Calculate next available ID
-          const allIds = [...state.nodes.map(n => n.id), ...state.frames.map(f => f.id), ...state.edges.map(e => e.id)];
-          const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
-          const nextAvailableId = Math.max(state.nextId, maxId + 1);
-
-          addEdge({
-            id: nextAvailableId,
-            from: state.pendingEdge.from,
-            to: elementId,
-          });
-          setPendingEdge(null);
-        }
-      } else {
-        setPendingEdge(null);
-        setActiveTool('select');
-      }
-    }
-  }, [
-    state.activeTool,
-    state.frames,
-    state.marqueeInfo,
-    state.nodeToAdd,
-    state.nodes,
-    state.pendingEdge,
-    state.selectedEdgeIds,
-    state.selectedFrameIds,
-    state.selectedNodeIds,
-    state.nextId,
-    addEdge,
-    addFrame,
-    addNode,
-    resetCursor,
-    setActiveTool,
-    setDragInfo,
-    setMarqueeInfo,
+    setSelectedNodes,
+    setSelectedFrames,
+    setSelectedEdges,
+    setPendingFrame,
     setNodeToAdd,
     setPendingEdge,
-    setPendingFrame,
-    setResizeInfo,
-    setSelectedEdges,
-    setSelectedFrames,
-    setSelectedNodes,
-  ]);
+    setEditingNodeId,
+    setPendingEditNodeId,
+  } = useAppActions();
+  
+  const {
+    handleCanvasMouseDown,
+    handleCanvasMouseUp,
+    handleDoubleClick,
+    resetCursor,
+  } = useMouseEventManager(svgRef);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
     const coords = getSVGCoordinates(event, svgRef.current);
@@ -428,111 +155,6 @@ const Canvas: React.FC = () => {
     }
   }, [state.dragInfo, state.resizeInfo, state.marqueeInfo, state.pendingFrame, updateFrame, updateNode, setMarqueeInfo, setPendingFrame]);
 
-  const handleMouseUp = useCallback((event: MouseEvent) => {
-    const coords = getSVGCoordinates(event, svgRef.current);
-
-    // 編集待機中のノードがある場合、編集モードに入る
-    if (state.pendingEditNodeId !== null) {
-      setEditingNodeId(state.pendingEditNodeId);
-      setPendingEditNodeId(null);
-      return;
-    }
-
-    if (state.pendingFrame) {
-      const { kind, startX, startY } = state.pendingFrame;
-      setPendingFrame(null);
-
-      const endX = coords.x;
-      const endY = coords.y;
-
-      let width = Math.abs(endX - startX);
-      let height = Math.abs(endY - startY);
-      const x = Math.min(startX, endX);
-      const y = Math.min(startY, endY);
-
-      if (width < elementSize.frameMinWidth) {
-        width = elementSize.frameMinWidth;
-      }
-      if (height < elementSize.frameMinHeight) {
-        height = elementSize.frameMinHeight;
-      }
-
-      const nextAvailableId = state.nextId;
-      
-      addFrame({
-        id: nextAvailableId,
-        kind,
-        x,
-        y,
-        width,
-        height,
-        label: null,
-      });
-
-      setNodeToAdd(null);
-      resetCursor();
-      return;
-    }
-
-    if (state.marqueeInfo && state.marqueeInfo.isActive) {
-      const nodesInMarquee = getElementsInMarquee(state.nodes, state.marqueeInfo);
-      const framesInMarquee = getElementsInMarquee(state.frames, state.marqueeInfo);
-      const edgesInMarquee = getEdgesInMarquee(state.edges, state.nodes, state.frames, state.marqueeInfo);
-
-      if (event.shiftKey) {
-        const combinedNodeSelection = [...new Set([...state.selectedNodeIds, ...nodesInMarquee])];
-        const combinedFrameSelection = [...new Set([...state.selectedFrameIds, ...framesInMarquee])];
-        const combinedEdgeSelection = [...new Set([...state.selectedEdgeIds, ...edgesInMarquee])];
-        setSelectedNodes(combinedNodeSelection);
-        setSelectedFrames(combinedFrameSelection);
-        setSelectedEdges(combinedEdgeSelection);
-      } else {
-        setSelectedNodes(nodesInMarquee);
-        setSelectedFrames(framesInMarquee);
-        setSelectedEdges(edgesInMarquee);
-      }
-
-      setMarqueeInfo(null);
-      return;
-    }
-
-    if (state.dragInfo) {
-      setDragInfo(null);
-    }
-
-    if (state.resizeInfo) {
-      setResizeInfo(null);
-      resetCursor();
-    } else {
-      resetCursor();
-    }
-  }, [
-    state.dragInfo,
-    state.edges,
-    state.frames,
-    state.marqueeInfo,
-    state.nextId,
-    state.nodes,
-    state.resizeInfo,
-    state.selectedEdgeIds,
-    state.selectedFrameIds,
-    state.selectedNodeIds,
-    state.pendingFrame,
-    state.pendingEditNodeId,
-    addFrame,
-    resetCursor,
-    setDragInfo,
-    setMarqueeInfo,
-    setNodeToAdd,
-    setResizeInfo,
-    setSelectedEdges,
-    setSelectedFrames,
-    setSelectedNodes,
-    setPendingFrame,
-    setEditingNodeId,
-    setPendingEditNodeId,
-  ]);
-
   // Keyboard event handler
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const target = event.target as Element;
@@ -584,8 +206,6 @@ const Canvas: React.FC = () => {
       const hasFrames = state.selectedFrameIds.length > 0;
       const hasEdges = state.selectedEdgeIds.length > 0;
 
-
-
       if (hasNodes) {
         deleteNodes(state.selectedNodeIds);
         setSelectedNodes([]);
@@ -615,7 +235,6 @@ const Canvas: React.FC = () => {
 
       if (state.nodeToAdd) {
         setNodeToAdd(null);
-        pendingFrameRef.current = null;
         resetCursor();
       }
 
@@ -660,16 +279,18 @@ const Canvas: React.FC = () => {
     const svg = svgRef.current;
     if (!svg) return;
 
-    svg.addEventListener('mousedown', handleMouseDown);
+    svg.addEventListener('mousedown', handleCanvasMouseDown);
     document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseup', handleCanvasMouseUp);
+    svg.addEventListener('dblclick', handleDoubleClick);
 
     return () => {
-      svg.removeEventListener('mousedown', handleMouseDown);
+      svg.removeEventListener('mousedown', handleCanvasMouseDown);
       document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleCanvasMouseUp);
+      svg.removeEventListener('dblclick', handleDoubleClick);
     };
-  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+  }, [handleCanvasMouseDown, handleMouseMove, handleCanvasMouseUp, handleDoubleClick]);
 
   // Set up global keyboard event listeners
   useEffect(() => {
@@ -698,6 +319,17 @@ const Canvas: React.FC = () => {
       svgRef.current.style.cursor = state.nodeToAdd ? 'copy' : state.activeTool === 'arrow' ? 'crosshair' : 'default';
     }
   }, [state.nodeToAdd, state.activeTool]);
+
+  // Handle pendingEditNodeId to start editing the most recently added node
+  useEffect(() => {
+    if (state.pendingEditNodeId === -1) {
+      const firstSelectedNodeId = state.selectedNodeIds[0];
+      if (firstSelectedNodeId !== undefined) {
+        setEditingNodeId(firstSelectedNodeId);
+        setPendingEditNodeId(null);
+      }
+    }
+  }, [state.pendingEditNodeId, state.selectedNodeIds, setEditingNodeId, setPendingEditNodeId]);
 
   return (
     <div id="canvas-wrapper" className="canvas-wrapper" ref={wrapperRef}>

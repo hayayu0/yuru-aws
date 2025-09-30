@@ -22,7 +22,7 @@ const PROMPT_EXAMPLES = [
 ];
 
 const AIBar: React.FC = () => {
-  const { loadState, setAIGenerating, setAIError, clearAllDiagram, clearAllDrawing } = useAppActions();
+  const { loadState, setAIGenerating, setAIError, clearAllDiagram, clearAllDrawing, setInteractionMode } = useAppActions();
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<RequestStatus>("idle");
   const [selectedExample, setSelectedExample] = useState("");
@@ -107,7 +107,7 @@ const AIBar: React.FC = () => {
       const fullPrompt = AI_PROMPT_PREFIX + sanitizedPrompt + AI_PROMPT_POSTFIX;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      const timeoutId = setTimeout(() => controller.abort(), 58000);
       
       const response = await fetch(AI_PROMPT_ENDPOINT, {
         method: "POST",
@@ -133,7 +133,6 @@ const AIBar: React.FC = () => {
       const modelMatch = rawText.match(/MODELID-(.*?)-MODELID/);
       if (modelMatch) {
         modelName = modelMatch[1];
-        cleanedJson = rawText.replace(/MODELID-.*?-MODELID/, '');
       }
       
       const firstBrace = cleanedJson.indexOf('{');
@@ -146,8 +145,6 @@ const AIBar: React.FC = () => {
       cleanedJson = cleanedJson.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"');
 
       const payload = JSON.parse(cleanedJson);
-
-      clearAllDiagram();
 
       let importedNodes = sanitiseNodes(payload.nodes);
       const importedFrames = sanitiseFrames(payload.frames);
@@ -165,27 +162,30 @@ const AIBar: React.FC = () => {
         importedNodes = [modelNode, ...importedNodes];
       }
       
-      const calculatedNextId = calculateNextIdFromCollections(1, importedNodes, importedFrames, importedEdges);
-
       loadState({
         nodes: importedNodes,
         frames: importedFrames,
         edges: importedEdges,
-        nextId: calculatedNextId,
         selectedNodeIds: [],
         selectedFrameIds: [],
+        drawings: [],
+        drawing: {
+          active: false,
+          color: "#000000",
+          points: [],
+        },
+        penDeleteActive: false,
       });
-      
-      // Clear pen drawings on successful AI generation
-      clearAllDrawing();
 
       setStatus("success");
+      setInteractionMode("select");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'APIエラーが発生しました';
       setAIError(true, `APIの実行に失敗しました\n${errorMessage}`);
       setTimeout(() => {
         setAIError(false);
         setStatus("idle");
+        setInteractionMode("select");
       }, 3000);
     } finally {
       setAIGenerating(false);

@@ -80,13 +80,31 @@ const Edge: React.FC<EdgeProps> = ({
   if (handDrawnStyle && roughDrawable) {
     return (
       <g 
-        className={`edge-group edge-path ${isSelected ? 'edge-selected' : ''}`}
+        className={`edge-group ${isSelected ? 'edge-selected' : ''}`}
         data-edge-id={edge.id}
+        data-id={edge.id}
+        data-element-id={edge.id}
+        data-element-type="edge"
         style={{ 
           pointerEvents: 'stroke',
           cursor: 'pointer'
         }}
       >
+        <path
+          d={pathData}
+          className="edge-hit-area"
+          stroke="#000"
+          strokeOpacity={0}
+          strokeWidth={12}
+          fill="none"
+          data-edge-id={edge.id}
+          data-id={edge.id}
+          data-element-id={edge.id}
+          data-element-type="edge"
+          style={{ pointerEvents: 'stroke' }}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
         {/* Render the rough.js drawable as SVG paths */}
         {roughDrawable.sets.map((set: OpSet, index: number) => {
           // Convert rough.js operations to SVG path data
@@ -121,6 +139,7 @@ const Edge: React.FC<EdgeProps> = ({
               markerEnd={index === roughDrawable.sets.length - 1 ? `url(#${isSelected ? 'roughArrowHeadSelected' : 'roughArrowHead'})` : undefined}
               strokeLinecap="round"
               strokeLinejoin="round"
+              style={{ pointerEvents: 'none' }}
             />
           );
         })}
@@ -130,20 +149,46 @@ const Edge: React.FC<EdgeProps> = ({
 
   // Fallback to regular SVG path for non-hand-drawn style
   return (
-    <path
-      d={pathData}
-      stroke={isSelected ? "#a00000" : "#1f3aad"}
-      strokeWidth={isSelected ? "2" : "1.5"}
-      fill="none"
-      markerEnd={`url(#${isSelected ? 'arrowHeadSelected' : 'arrowHead'})`}
-      className={`edge-path ${isSelected ? 'edge-selected' : ''}`}
+    <g
+      className={`edge-group ${isSelected ? 'edge-selected' : ''}`}
       data-edge-id={edge.id}
-      style={{ 
+      data-id={edge.id}
+      data-element-type="edge"
+      style={{
         pointerEvents: 'stroke',
         cursor: 'pointer'
       }}
-    />
+    >
+      <path
+        d={pathData}
+        className="edge-hit-area"
+        stroke="#000"
+        strokeOpacity={0}
+        strokeWidth={12}
+        fill="none"
+        data-edge-id={edge.id}
+        data-id={edge.id}
+        data-element-id={edge.id}
+        data-element-type="edge"
+        style={{ pointerEvents: 'stroke' }}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={pathData}
+        stroke={isSelected ? "#a00000" : "#1f3aad"}
+        strokeWidth={isSelected ? "2" : "1.5"}
+        fill="none"
+        markerEnd={`url(#${isSelected ? 'arrowHeadSelected' : 'arrowHead'})`}
+        className={`edge-path ${isSelected ? 'edge-selected' : ''}`}
+        data-edge-id={edge.id}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ pointerEvents: 'none' }}
+      />
+    </g>
   );
+
 };
 
 export default Edge;

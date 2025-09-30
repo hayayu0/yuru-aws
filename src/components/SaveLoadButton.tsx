@@ -13,15 +13,16 @@ import { validateJsonString } from "../utils/security";
 
 const SaveLoadButton: React.FC = () => {
   const { state } = useAppState();
-  const { loadState, clearAllDrawing } = useAppActions();
+  const { loadState } = useAppActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isDisabled = state.interactionMode === 'waitingAI';
 
   const exportToJSON = () => {
+    if (isDisabled) return;
     const data = {
       nodes: state.nodes.map(normaliseNodeForExport),
       frames: state.frames.map(normaliseFrameForExport),
       edges: state.edges.map((edge): Edge => ({ ...edge })),
-      nextId: state.nextId,
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -49,6 +50,7 @@ const SaveLoadButton: React.FC = () => {
   };
 
   const handleJSONImport = () => {
+    if (isDisabled) return;
     fileInputRef.current?.click();
   };
 
@@ -73,21 +75,21 @@ const SaveLoadButton: React.FC = () => {
         const importedNodes = sanitiseNodes(data.nodes);
         const importedFrames = sanitiseFrames(data.frames);
         const importedEdges = sanitiseEdges(data.edges);
-        const importedNextId = Number.isFinite(Number(data.nextId))
-          ? Number(data.nextId)
-          : 1;
 
         loadState({
           nodes: importedNodes,
           frames: importedFrames,
           edges: importedEdges,
-          nextId: importedNextId,
           selectedNodeIds: [],
           selectedFrameIds: [],
+          drawings: [],
+          drawing: {
+            active: false,
+            color: "#000000",
+            points: [],
+          },
+          penDeleteActive: false,
         });
-        
-        // Clear pen drawings on successful JSON load
-        clearAllDrawing();
       } catch (error) {
         alert("Error: Could not parse JSON file.");
         console.error(error);
@@ -103,6 +105,7 @@ const SaveLoadButton: React.FC = () => {
       <button
         type="button"
         onClick={exportToJSON}
+        disabled={isDisabled}
         title="Export diagram as JSON file"
       >
         保存(Json)
@@ -111,6 +114,7 @@ const SaveLoadButton: React.FC = () => {
       <button
         type="button"
         onClick={handleJSONImport}
+        disabled={isDisabled}
         title="Import diagram from JSON file"
       >
         読込(Json)

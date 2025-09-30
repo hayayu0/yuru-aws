@@ -12,6 +12,8 @@ const ServiceButton: React.FC<ServiceButtonProps> = ({ serviceName }) => {
   const { state } = useAppState();
   const service = awsServices[serviceName];
   const isDisabled = state.isAIGenerating;
+  const isActive = state.nodeToAdd === serviceName && 
+                   (state.interactionMode === 'createNodeReady' || state.interactionMode === 'createFrameReady');
   
   if (!service) {
     console.warn(`Service ${serviceName} not found in awsServices`);
@@ -57,6 +59,9 @@ const ServiceButton: React.FC<ServiceButtonProps> = ({ serviceName }) => {
       onClick={handleClick}
       disabled={isDisabled}
       aria-label={`Add ${service.buttonText || serviceName} to diagram`}
+      style={{
+        backgroundColor: isActive ? '#fffacd' : undefined
+      }}
     >
       <img 
         src={getIconPath(serviceName)} 

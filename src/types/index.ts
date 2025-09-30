@@ -75,7 +75,7 @@ export interface FreehandPath {
 
 export type ToolType = 'select' | 'arrow' | 'pen-black' | 'pen-red' | 'penDelete';
 
-
+export type InteractionMode = 'select' | 'createEdgeReady' | 'drawingEdge' | 'createNodeReady' | 'createFrameReady' | 'drawPen' | 'waitingAI';
 
 export interface PendingFrame {
   kind: string;
@@ -85,13 +85,16 @@ export interface PendingFrame {
   currentY: number;
 }
 
+export const MAX_ELEMENTS = 1000;
+
 export interface AppState {
   nodes: Node[];
   frames: Frame[];
   edges: Edge[];
-  nextId: number;
+  usedIds: boolean[]; // Array of MAX_ELEMENTS booleans to track used IDs
   
   activeTool: ToolType;
+  interactionMode: InteractionMode;
   selectedNodeIds: number[];
   selectedFrameIds: number[];
   selectedEdgeIds: number[];
@@ -129,13 +132,14 @@ export interface AWSService {
 // Action types
 export type AppAction =
   | { type: 'SET_ACTIVE_TOOL'; payload: ToolType }
-  | { type: 'ADD_NODE'; payload: Node }
+  | { type: 'SET_INTERACTION_MODE'; payload: InteractionMode }
+  | { type: 'ADD_NODE'; payload: Omit<Node, 'id'> }
   | { type: 'UPDATE_NODE'; payload: { id: number; updates: Partial<Node> } }
   | { type: 'DELETE_NODES'; payload: number[] }
-  | { type: 'ADD_FRAME'; payload: Frame }
+  | { type: 'ADD_FRAME'; payload: Omit<Frame, 'id'> }
   | { type: 'UPDATE_FRAME'; payload: { id: number; updates: Partial<Frame> } }
   | { type: 'DELETE_FRAMES'; payload: number[] }
-  | { type: 'ADD_EDGE'; payload: Edge }
+  | { type: 'ADD_EDGE'; payload: Omit<Edge, 'id'> }
   | { type: 'DELETE_EDGES'; payload: number[] }
   | { type: 'SET_SELECTED_NODES'; payload: number[] }
   | { type: 'SET_SELECTED_FRAMES'; payload: number[] }

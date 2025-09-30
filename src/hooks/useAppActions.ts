@@ -1,10 +1,12 @@
 import { useCallback } from "react";
 import { useAppState } from "./useAppState";
+import { awsServices } from "../types/aws";
 import type {
   Node,
   Frame,
   Edge,
   ToolType,
+  InteractionMode,
   PendingEdge,
   ResizeInfo,
   DragInfo,
@@ -23,11 +25,28 @@ export const useAppActions = () => {
     if (tool !== "arrow") {
       dispatch({ type: "SET_PENDING_EDGE", payload: null });
     }
+    if (tool === "arrow") {
+      dispatch({ type: "SET_SELECTED_NODES", payload: [] });
+      dispatch({ type: "SET_SELECTED_FRAMES", payload: [] });
+      dispatch({ type: "SET_INTERACTION_MODE", payload: "createEdgeReady" });
+    } else if (tool === "pen-black" || tool === "pen-red" || tool === "penDelete") {
+      dispatch({ type: "SET_SELECTED_NODES", payload: [] });
+      dispatch({ type: "SET_SELECTED_FRAMES", payload: [] });
+      dispatch({ type: "SET_INTERACTION_MODE", payload: "drawPen" });
+    } else {
+      dispatch({ type: "SET_INTERACTION_MODE", payload: "select" });
+    }
     dispatch({ type: "SET_ACTIVE_TOOL", payload: tool });
   }, [dispatch]);
 
-  const addNode = useCallback((node: Node) => {
+  const setInteractionMode = useCallback((mode: InteractionMode) => {
+    dispatch({ type: "SET_INTERACTION_MODE", payload: mode });
+  }, [dispatch]);
+
+  const addNode = useCallback((node: Omit<Node, 'id'>) => {
     dispatch({ type: "ADD_NODE", payload: node });
+    // Note: In a real implementation, you'd need to return the actual added node with ID
+    // For now, we'll handle this differently in the caller
   }, [dispatch]);
 
   const setPendingEditNodeId = useCallback((nodeId: number | null) => {
@@ -42,7 +61,7 @@ export const useAppActions = () => {
     dispatch({ type: "DELETE_NODES", payload: nodeIds });
   }, [dispatch]);
 
-  const addFrame = useCallback((frame: Frame) => {
+  const addFrame = useCallback((frame: Omit<Frame, 'id'>) => {
     dispatch({ type: "ADD_FRAME", payload: frame });
   }, [dispatch]);
 
@@ -54,7 +73,7 @@ export const useAppActions = () => {
     dispatch({ type: "DELETE_FRAMES", payload: frameIds });
   }, [dispatch]);
 
-  const addEdge = useCallback((edge: Edge) => {
+  const addEdge = useCallback((edge: Omit<Edge, 'id'>) => {
     dispatch({ type: "ADD_EDGE", payload: edge });
   }, [dispatch]);
 
@@ -92,6 +111,16 @@ export const useAppActions = () => {
 
   const setNodeToAdd = useCallback((nodeKind: string | null) => {
     dispatch({ type: "SET_NODE_TO_ADD", payload: nodeKind });
+    if (nodeKind) {
+      const serviceConfig = awsServices[nodeKind];
+      if (serviceConfig?.isFrame) {
+        dispatch({ type: "SET_INTERACTION_MODE", payload: "createFrameReady" });
+      } else {
+        dispatch({ type: "SET_INTERACTION_MODE", payload: "createNodeReady" });
+      }
+    } else {
+      dispatch({ type: "SET_INTERACTION_MODE", payload: "select" });
+    }
   }, [dispatch]);
 
   const setEditingNodeId = useCallback((nodeId: number | null) => {
@@ -130,6 +159,10 @@ export const useAppActions = () => {
 
   const setAIGenerating = useCallback((isGenerating: boolean) => {
     dispatch({ type: "SET_AI_GENERATING", payload: isGenerating });
+    if (isGenerating) {
+      dispatch({ type: "SET_INTERACTION_MODE", payload: "waitingAI" });
+    }
+    // Don't automatically return to 'select' - preserve previous mode
   }, [dispatch]);
 
   const setAIError = useCallback((hasError: boolean, message?: string) => {
@@ -138,6 +171,7 @@ export const useAppActions = () => {
     } else {
       dispatch({ type: "SET_AI_ERROR", payload: hasError });
     }
+    // Don't automatically return to 'select' - preserve previous mode
   }, [dispatch]);
 
   const setPendingFrame = useCallback((pendingFrame: any) => {
@@ -154,7 +188,6 @@ export const useAppActions = () => {
         nodes: [],
         frames: [],
         edges: [],
-        nextId: 1,
       },
     });
   }, [dispatch]);
@@ -181,6 +214,7 @@ export const useAppActions = () => {
 
   return {
     setActiveTool,
+    setInteractionMode,
     addNode,
     updateNode,
     deleteNodes,
@@ -199,7 +233,6 @@ export const useAppActions = () => {
     setNodeToAdd,
     setEditingNodeId,
     setPendingEditNodeId,
-
     setDrawingContainer,
     updateDrawing,
     addFreehandPath,
