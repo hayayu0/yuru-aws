@@ -87,7 +87,7 @@ export const awsServices: AWSServices = {
   CodePipeline: { buttonGroup: "Code" },
   CodeBuild: { buttonGroup: "Code" },
   CodeDeploy: { buttonGroup: "Code" },
-  Organization: { buttonGroup: "Others" },
+  Organizations: { buttonGroup: "Others" },
   Amplify: { buttonGroup: "Others" },
   MGN: { buttonGroup: "Others" },
   DMS: { buttonGroup: "Others" },

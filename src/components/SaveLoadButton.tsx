@@ -10,6 +10,7 @@ import {
   sanitiseEdges,
 } from "../utils/diagramNormalization";
 import { validateJsonString } from "../utils/security";
+import { convertJsonToXml } from "../utils/convertJsonXml";
 
 const SaveLoadButton: React.FC = () => {
   const { state } = useAppState();
@@ -43,6 +44,39 @@ const SaveLoadButton: React.FC = () => {
       .padStart(2, "0")}`;
 
     a.download = `aws-diagram_${timestamp}.json`;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+
+    URL.revokeObjectURL(a.href);
+  };
+
+  const exportToDiagramsNet = () => {
+    if (isDisabled) return;
+    const data = {
+      nodes: state.nodes.map(normaliseNodeForExport),
+      frames: state.frames.map(normaliseFrameForExport),
+      edges: state.edges.map((edge): Edge => ({ ...edge })),
+    };
+
+    const xmlContent = convertJsonToXml(data);
+    const blob = new Blob([xmlContent], {
+      type: "application/xml",
+    });
+
+    const a = document.createElement("a");
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}${now.getDate().toString().padStart(2, "0")}_${now
+      .getHours()
+      .toString()
+      .padStart(2, "0")}${now.getMinutes().toString().padStart(2, "0")}${now
+      .getSeconds()
+      .toString()
+      .padStart(2, "0")}`;
+
+    a.download = `aws-diagram_${timestamp}.drawio`;
     a.href = URL.createObjectURL(blob);
     a.click();
 
@@ -118,6 +152,15 @@ const SaveLoadButton: React.FC = () => {
         title="Import diagram from JSON file"
       >
         読込(Json)
+      </button>
+
+      <button
+        type="button"
+        onClick={exportToDiagramsNet}
+        disabled={isDisabled}
+        title="Export diagram for diagrams.net"
+      >
+        保存(diagrams.net用)
       </button>
 
       <input

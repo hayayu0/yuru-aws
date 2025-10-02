@@ -23,5 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+do-not-sync
+
 # Configuration files with sensitive data
 public/config.json

@@ -24,8 +24,6 @@ export interface Edge {
   to: number;   // node id or frame id
 }
 
-
-
 export interface PendingEdge {
   from: number; // node id or frame id
   initialMousePos?: { x: number; y: number };
