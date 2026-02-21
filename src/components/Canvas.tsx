@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
 import { useAppActions } from '../hooks/useAppActions';
 import { useMouseEventManager } from '../hooks/useMouseEventManager';
@@ -9,9 +9,15 @@ import DiagramSVG from './DiagramSVG';
 import MarqueeSelection from './MarqueeSelection';
 import InlineTextEditor from './InlineTextEditor';
 
+const DEFAULT_CANVAS_SCALE = 48 / 78;
+const MIN_CANVAS_SCALE = 0.25;
+const MAX_CANVAS_SCALE = 3;
+
 const Canvas: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [canvasScale, setCanvasScale] = useState(DEFAULT_CANVAS_SCALE);
+  const [canvasViewport, setCanvasViewport] = useState({ width: 1, height: 1 });
   const { state } = useAppState();
   const {
     setMarqueeInfo,
@@ -313,6 +319,55 @@ const Canvas: React.FC = () => {
     wrapperRef.current.style.pointerEvents = isDrawingTool ? 'none' : 'auto';
   }, [state.activeTool]);
 
+  // Keep SVG viewBox aligned with the canvas wrapper size
+  useEffect(() => {
+    if (!wrapperRef.current) {
+      return;
+    }
+
+    const wrapper = wrapperRef.current;
+    const updateViewport = () => {
+      setCanvasViewport({
+        width: Math.max(1, wrapper.clientWidth),
+        height: Math.max(1, wrapper.clientHeight),
+      });
+    };
+
+    updateViewport();
+    const resizeObserver = new ResizeObserver(updateViewport);
+    resizeObserver.observe(wrapper);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Zoom only inside the diagram canvas area with the mouse wheel
+  useEffect(() => {
+    if (!wrapperRef.current) {
+      return;
+    }
+
+    const wrapper = wrapperRef.current;
+    const clampScale = (value: number) =>
+      Math.min(MAX_CANVAS_SCALE, Math.max(MIN_CANVAS_SCALE, value));
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+
+      const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+      setCanvasScale((prevScale) => clampScale(prevScale * zoomFactor));
+    };
+
+    wrapper.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      wrapper.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  const viewBoxWidth = canvasViewport.width / canvasScale;
+  const viewBoxHeight = canvasViewport.height / canvasScale;
+
   // Update cursor when nodeToAdd changes
   useEffect(() => {
     if (svgRef.current) {
@@ -340,6 +395,8 @@ const Canvas: React.FC = () => {
         role="application"
         aria-label="AWS Diagram"
         xmlns="http://www.w3.org/2000/svg"
+        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+        preserveAspectRatio="xMinYMin meet"
         style={{
           width: '100%',
           height: '100%',

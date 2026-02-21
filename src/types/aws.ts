@@ -73,10 +73,6 @@ export const awsServices: AWSServices = {
   StorageGateway: { buttonGroup: "Storage / Data" },
   ECR: { buttonGroup: "Storage / Data" },
   Snapshot: { buttonGroup: "Storage / Data" },
-  Glue: { buttonGroup: "Analytics" },
-  EMR: { buttonGroup: "Analytics" },
-  OpenSearch: { buttonGroup: "Analytics" },
-  LakeFormation: { buttonGroup: "Analytics" },
   Redshift: { buttonGroup: "Managed Instance" },
   ElastiCache: { buttonGroup: "Managed Instance" },
   ManagedAD: { buttonGroup: "Managed Instance", buttonText: "Managed MS AD" },
@@ -116,10 +112,10 @@ export const groupOrder = [
 ];
 
 export const elementSize = {
-  defaultNodeWidth: 48,
-  defaultNodeHeight: 48,
-  frameMinWidth: 80,
-  frameMinHeight: 60,
+  defaultNodeWidth: 78,
+  defaultNodeHeight: 78,
+  frameMinWidth: 130,
+  frameMinHeight: 98,
 };
 
 export const getIconPath = (kind: string): string => {

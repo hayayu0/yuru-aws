@@ -77,9 +77,12 @@ const FrameNode: React.FC<FrameNodeProps> = ({ frame, isSelected }) => {
       ? elementSize.defaultNodeWidth * 0.6 + 12
       : 12;
   const labelAnchor: 'start' | 'middle' = isCenteredLabel ? 'middle' : 'start';
-  const labelY = frame.kind === 'AutoScaling' && displayIcon
-    ? elementSize.defaultNodeWidth * 0.6 + 16
-    : displayIcon ? elementSize.defaultNodeWidth * 0.6 - 4 : 20;
+  const baseLabelY = frame.kind === 'AutoScaling' && displayIcon
+    ? elementSize.defaultNodeWidth * 0.6 + 20
+    : displayIcon ? elementSize.defaultNodeWidth * 0.6 - 12 : 12;
+  const labelY = isCenteredLabel
+    ? baseLabelY + 8
+    : baseLabelY;
 
   const iconX = isCenteredIcon
     ? (frame.width - elementSize.defaultNodeWidth * 0.6) / 2

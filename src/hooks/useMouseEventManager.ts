@@ -237,7 +237,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
           const toNode = state.nodes.find(n => n.id === edge.to) || state.frames.find(f => f.id === edge.to);
           
           if (!fromNode || !toNode) return false;
-          
+
           // Calculate edge endpoints (center of nodes/frames)
           const fromCenterX = fromNode.x + ('width' in fromNode ? (fromNode as any).width : elementSize.defaultNodeWidth) / 2;
           const fromCenterY = fromNode.y + ('height' in fromNode ? (fromNode as any).height : elementSize.defaultNodeHeight) / 2;
@@ -283,6 +283,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
 
     const nodeAlreadySelected = state.selectedNodeIds.includes(nodeId);
     let nextSelectedNodes = state.selectedNodeIds;
+    let nextSelectedFrames = state.selectedFrameIds;
 
     if (isToggleModifier) {
       nextSelectedNodes = toggleSelection(state.selectedNodeIds, nodeId);
@@ -290,7 +291,8 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
     } else if (!nodeAlreadySelected) {
       nextSelectedNodes = [nodeId];
       setSelectedNodes(nextSelectedNodes);
-      setSelectedFrames([]);
+      nextSelectedFrames = [];
+      setSelectedFrames(nextSelectedFrames);
     }
 
     if (!nextSelectedNodes.includes(nodeId)) {
@@ -298,7 +300,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
     }
 
     const dragNodeIds = nextSelectedNodes;
-    const dragFrameIds = state.selectedFrameIds;
+    const dragFrameIds = nextSelectedFrames;
 
     const nodePositions: { [nodeId: number]: { x: number; y: number } } = {};
     dragNodeIds.forEach(id => {
@@ -338,6 +340,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
 
     const frameAlreadySelected = state.selectedFrameIds.includes(frameId);
     let nextSelectedFrames = state.selectedFrameIds;
+    let nextSelectedNodes = state.selectedNodeIds;
 
     if (isToggleModifier) {
       nextSelectedFrames = toggleSelection(state.selectedFrameIds, frameId);
@@ -345,7 +348,8 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
     } else if (!frameAlreadySelected) {
       nextSelectedFrames = [frameId];
       setSelectedFrames(nextSelectedFrames);
-      setSelectedNodes([]);
+      nextSelectedNodes = [];
+      setSelectedNodes(nextSelectedNodes);
     }
 
     if (!nextSelectedFrames.includes(frameId)) {
@@ -353,7 +357,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
     }
 
     const dragFrameIds = nextSelectedFrames;
-    const dragNodeIds = state.selectedNodeIds;
+    const dragNodeIds = nextSelectedNodes;
 
     const framePositions: { [frameId: number]: { x: number; y: number } } = {};
     dragFrameIds.forEach(id => {

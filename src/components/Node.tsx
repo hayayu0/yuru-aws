@@ -10,8 +10,8 @@ interface NodeProps {
 const Node: React.FC<NodeProps> = ({ node, isSelected }) => {
   const service = awsServices[node.kind];
   const displayIcon = service?.displayIcon !== false;
-  const labelText = node.label || service?.buttonText || node.kind;
   const isTextBox = node.kind === 'TextBox';
+  const labelText = node.label || service?.buttonText || node.kind;
 
   const nodeWidth = elementSize.defaultNodeWidth;
   const nodeHeight = isTextBox ? 36 : elementSize.defaultNodeHeight;
@@ -62,7 +62,7 @@ const Node: React.FC<NodeProps> = ({ node, isSelected }) => {
 
       <text
         x={nodeWidth / 2}
-        y={isTextBox ? nodeHeight / 2 + 4 : nodeHeight + 15}
+        y={isTextBox ? nodeHeight / 2 + 4 : nodeHeight + 21}
         textAnchor="middle"
         className="node-label regular-label"
         style={{ pointerEvents: 'all', cursor: 'text', fill: '#333333' }}

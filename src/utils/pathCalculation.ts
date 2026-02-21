@@ -1,3 +1,5 @@
+import { elementSize } from '../types/aws';
+
 export interface RectElement {
   id: number;
   x: number;
@@ -12,20 +14,19 @@ export interface Port {
   name: 'top' | 'bottom' | 'left' | 'right';
 }
 
-const defaultNodeWidth = 48;
-const defaultNodeHeight = 48;
-
 const getWidth = (element: RectElement): number => element.width;
 const getHeight = (element: RectElement): number => element.height;
 
 // Helper function to convert Node or Frame to RectElement
-export const toRectElement = (element: { id: number; x: number; y: number; width?: number; height?: number }): RectElement => {
+export const toRectElement = (
+  element: { id: number; x: number; y: number; width?: number; height?: number },
+): RectElement => {
   return {
     id: element.id,
     x: element.x,
     y: element.y,
-    width: element.width ?? 48,
-    height: element.height ?? 48,
+    width: element.width ?? elementSize.defaultNodeWidth,
+    height: element.height ?? elementSize.defaultNodeHeight,
   };
 };
 

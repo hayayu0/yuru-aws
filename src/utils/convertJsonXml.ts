@@ -1,6 +1,6 @@
 import type { Node, Frame, Edge } from "../types";
+import { elementSize } from "../types/aws";
 
-const ICON_SIZE = 48;
 const EDGE_STROKE_WIDTH = 1.5;
 const ID_PREFIX = "ConvertFrom_YuruAws-";
 const POINTS_IN_STYLE = "points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;"
@@ -263,11 +263,11 @@ export function convertJsonToXml(data: YuruAwsData): string {
     if (!attributes) {
       console.warn(`Unknown icon: ${nodeData.kind}`);
       return `        <mxCell id="${id}" value="${escapeXml(label)}" style="sketch=0;${POINTS_IN_STYLE}fontColor=${COLOR_GROUP.GENERALDARK};fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.organizations;" vertex="1" parent="1">
-          <mxGeometry x="${nodeData.x}" y="${nodeData.y}" width="${ICON_SIZE}" height="${ICON_SIZE}" as="geometry" />
+          <mxGeometry x="${nodeData.x}" y="${nodeData.y}" width="${elementSize.defaultNodeWidth}" height="${elementSize.defaultNodeHeight}" as="geometry" />
         </mxCell>`;
     }
-    const width = attributes.width ?? ICON_SIZE;
-    const height = attributes.height ?? ICON_SIZE;
+    const width = attributes.width ?? elementSize.defaultNodeWidth;
+    const height = attributes.height ?? elementSize.defaultNodeHeight;
     const style = buildElementStyle(attributes);
     return `        <mxCell id="${id}" value="${escapeXml(label)}" style="${style}" vertex="1" parent="1">
           <mxGeometry x="${nodeData.x}" y="${nodeData.y}" width="${width}" height="${height}" as="geometry" />

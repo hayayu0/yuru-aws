@@ -96,7 +96,6 @@ export interface AppState {
   selectedNodeIds: number[];
   selectedFrameIds: number[];
   selectedEdgeIds: number[];
-
   
   pendingEdge: PendingEdge | null;
   pendingFrame: PendingFrame | null;
@@ -106,7 +105,6 @@ export interface AppState {
   nodeToAdd: string | null;
   editingNodeId: number | null;
   pendingEditNodeId: number | null;
-
   drawingContainer: HTMLElement | null;
   
   drawing: DrawingState;
@@ -116,16 +114,6 @@ export interface AppState {
   aiError: boolean;
   aiErrorMessage?: string | undefined;
 }
-
-export interface AWSService {
-  buttonGroup: string;
-  buttonText?: string;
-  isFrame?: boolean;
-  zLayer?: number;
-  displayIcon?: boolean;
-}
-
-
 
 // Action types
 export type AppAction =
@@ -149,13 +137,11 @@ export type AppAction =
   | { type: 'SET_NODE_TO_ADD'; payload: string | null }
   | { type: 'SET_EDITING_NODE'; payload: number | null }
   | { type: 'SET_PENDING_EDIT_NODE'; payload: number | null }
-
   | { type: 'SET_DRAWING_CONTAINER'; payload: HTMLElement | null }
   | { type: 'UPDATE_DRAWING'; payload: Partial<DrawingState> }
   | { type: 'ADD_FREEHAND_PATH'; payload: FreehandPath }
   | { type: 'DELETE_FREEHAND_PATHS'; payload: number[] }
   | { type: 'SET_PEN_DELETE_ACTIVE'; payload: boolean }
-
   | { type: 'LOAD_STATE'; payload: Partial<AppState> }
   | { type: 'RESET_STATE' }
   | { type: 'SET_AI_GENERATING'; payload: boolean }
