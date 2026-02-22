@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { useAppState } from "../hooks/useAppState";
 import { useAppActions } from "../hooks/useAppActions";
+import { getSVGCoordinates } from "../utils/coordinates";
 
 const PEN_COLORS: Record<'pen-black' | 'pen-red', string> = {
   'pen-black': '#111122',
@@ -51,6 +52,7 @@ const DrawingLayer: React.FC = () => {
   } = useAppActions();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activePointerId = useRef<number | null>(null);
+  const [drawingViewBox, setDrawingViewBox] = React.useState("0 0 1 1");
 
   const isPenTool = state.activeTool === 'pen-black' || state.activeTool === 'pen-red';
   const isPenDelete = state.activeTool === 'penDelete';
@@ -76,16 +78,37 @@ const DrawingLayer: React.FC = () => {
     }
   }, [isPenDelete, state.penDeleteActive, setPenDeleteActive]);
 
-  const getLocalCoords = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const element = wrapperRef.current;
-    if (!element) {
+  useEffect(() => {
+    const canvasSvg = document.getElementById('diagramCanvas') as SVGSVGElement | null;
+    if (!canvasSvg) {
+      return;
+    }
+
+    const syncViewBox = () => {
+      const nextViewBox = canvasSvg.getAttribute('viewBox');
+      if (nextViewBox) {
+        setDrawingViewBox(nextViewBox);
+      }
+    };
+
+    syncViewBox();
+    const observer = new MutationObserver(syncViewBox);
+    observer.observe(canvasSvg, {
+      attributes: true,
+      attributeFilter: ['viewBox'],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const getSvgCoords = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const canvasSvg = document.getElementById('diagramCanvas') as SVGSVGElement | null;
+    if (!canvasSvg) {
       return { x: 0, y: 0 };
     }
-    const rect = element.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
+    return getSVGCoordinates(event.nativeEvent, canvasSvg);
   }, []);
 
   const removePathsNearPoint = useCallback((point: { x: number; y: number }) => {
@@ -133,7 +156,7 @@ const DrawingLayer: React.FC = () => {
     }
 
     event.preventDefault();
-    const coords = getLocalCoords(event);
+    const coords = getSvgCoords(event);
 
     activePointerId.current = event.pointerId;
     wrapperRef.current?.setPointerCapture(event.pointerId);
@@ -149,14 +172,14 @@ const DrawingLayer: React.FC = () => {
       setPenDeleteActive(true);
       removePathsNearPoint(coords);
     }
-  }, [getLocalCoords, isPenTool, isPenDelete, state.activeTool, updateDrawing, setPenDeleteActive, removePathsNearPoint]);
+  }, [getSvgCoords, isPenTool, isPenDelete, state.activeTool, updateDrawing, setPenDeleteActive, removePathsNearPoint]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (activePointerId.current !== event.pointerId) {
       return;
     }
 
-    const coords = getLocalCoords(event);
+    const coords = getSvgCoords(event);
 
     if (isPenTool && state.drawing.active) {
       updateDrawing({
@@ -165,7 +188,7 @@ const DrawingLayer: React.FC = () => {
     } else if (isPenDelete && state.penDeleteActive) {
       removePathsNearPoint(coords);
     }
-  }, [getLocalCoords, isPenTool, isPenDelete, state.drawing.active, state.drawing.points, state.penDeleteActive, updateDrawing, removePathsNearPoint]);
+  }, [getSvgCoords, isPenTool, isPenDelete, state.drawing.active, state.drawing.points, state.penDeleteActive, updateDrawing, removePathsNearPoint]);
 
   const finalizeStroke = useCallback((extraPoint?: { x: number; y: number }) => {
     if (!state.drawing.active) {
@@ -203,7 +226,7 @@ const DrawingLayer: React.FC = () => {
       return;
     }
 
-    const coords = getLocalCoords(event);
+    const coords = getSvgCoords(event);
     wrapperRef.current?.releasePointerCapture(event.pointerId);
     activePointerId.current = null;
 
@@ -213,7 +236,7 @@ const DrawingLayer: React.FC = () => {
       removePathsNearPoint(coords);
       setPenDeleteActive(false);
     }
-  }, [finalizeStroke, getLocalCoords, isPenTool, isPenDelete, removePathsNearPoint, setPenDeleteActive]);
+  }, [finalizeStroke, getSvgCoords, isPenTool, isPenDelete, removePathsNearPoint, setPenDeleteActive]);
 
   return (
     <div
@@ -227,7 +250,7 @@ const DrawingLayer: React.FC = () => {
       onPointerCancel={handlePointerEnd}
       aria-hidden={!isDrawingTool}
     >
-      <svg className="drawing-surface" role="presentation">
+      <svg className="drawing-surface" role="presentation" viewBox={drawingViewBox} preserveAspectRatio="xMinYMin meet">
         {state.drawings.map(path => (
           <polyline
             key={path.id}

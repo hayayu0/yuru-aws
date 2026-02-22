@@ -17,6 +17,8 @@ const SaveLoadButton: React.FC = () => {
   const { loadState } = useAppActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isDisabled = state.interactionMode === 'waitingAI';
+  const triggerZoomIn = () => window.dispatchEvent(new Event('yuruaws:zoom-in'));
+  const triggerZoomOut = () => window.dispatchEvent(new Event('yuruaws:zoom-out'));
 
   const exportToJSON = () => {
     if (isDisabled) return;
@@ -161,6 +163,24 @@ const SaveLoadButton: React.FC = () => {
         title="Export diagram for diagrams.net"
       >
         保存(diagrams.net用)
+      </button>
+
+      <button
+        type="button"
+        onClick={triggerZoomIn}
+        disabled={isDisabled}
+        title="Zoom in"
+      >
+        🔍+
+      </button>
+
+      <button
+        type="button"
+        onClick={triggerZoomOut}
+        disabled={isDisabled}
+        title="Zoom out"
+      >
+        🔍-
       </button>
 
       <input

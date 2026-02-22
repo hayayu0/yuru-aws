@@ -3,6 +3,7 @@ import { useAppState } from '../hooks/useAppState';
 import { useAppActions } from '../hooks/useAppActions';
 import { useMouseEventManager } from '../hooks/useMouseEventManager';
 import { getSVGCoordinates } from '../utils/coordinates';
+import { exportSelectionToEncodedMxGraph, parseMxGraphClipboard } from '../utils/clipboardMxGraph';
 import { elementSize } from '../types/aws';
 import GridBackground from './GridBackground';
 import DiagramSVG from './DiagramSVG';
@@ -12,12 +13,29 @@ import InlineTextEditor from './InlineTextEditor';
 const DEFAULT_CANVAS_SCALE = 48 / 78;
 const MIN_CANVAS_SCALE = 0.25;
 const MAX_CANVAS_SCALE = 3;
+const ZOOM_STEP_IN = 1.1;
+const ZOOM_STEP_OUT = 0.9;
+const ZOOM_IN_EVENT = 'yuruaws:zoom-in';
+const ZOOM_OUT_EVENT = 'yuruaws:zoom-out';
 
 const Canvas: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const pasteSequenceRef = useRef(0);
+  const pasteShortcutLockedRef = useRef(false);
   const [canvasScale, setCanvasScale] = useState(DEFAULT_CANVAS_SCALE);
   const [canvasViewport, setCanvasViewport] = useState({ width: 1, height: 1 });
+  const clampScale = useCallback((value: number) => (
+    Math.min(MAX_CANVAS_SCALE, Math.max(MIN_CANVAS_SCALE, value))
+  ), []);
+
+  const zoomIn = useCallback(() => {
+    setCanvasScale((prevScale) => clampScale(prevScale * ZOOM_STEP_IN));
+  }, [clampScale]);
+
+  const zoomOut = useCallback(() => {
+    setCanvasScale((prevScale) => clampScale(prevScale * ZOOM_STEP_OUT));
+  }, [clampScale]);
   const { state } = useAppState();
   const {
     setMarqueeInfo,
@@ -34,6 +52,7 @@ const Canvas: React.FC = () => {
     setPendingEdge,
     setEditingNodeId,
     setPendingEditNodeId,
+    loadState,
   } = useAppActions();
   
   const {
@@ -161,6 +180,111 @@ const Canvas: React.FC = () => {
     }
   }, [state.dragInfo, state.resizeInfo, state.marqueeInfo, state.pendingFrame, updateFrame, updateNode, setMarqueeInfo, setPendingFrame]);
 
+  const copySelectionToClipboard = useCallback(async () => {
+    const encoded = exportSelectionToEncodedMxGraph(state);
+    if (!encoded) {
+      return;
+    }
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+      console.warn('Clipboard write is not supported in this environment.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(encoded);
+    } catch (error) {
+      console.error('Failed to write clipboard data.', error);
+    }
+  }, [state]);
+
+  const pasteFromClipboard = useCallback(async () => {
+    if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+      console.warn('Clipboard read is not supported in this environment.');
+      return;
+    }
+
+    let clipboardText = '';
+    try {
+      clipboardText = await navigator.clipboard.readText();
+    } catch (error) {
+      console.error('Failed to read clipboard data.', error);
+      return;
+    }
+
+    const parsed = parseMxGraphClipboard(clipboardText);
+    if (!parsed) {
+      return;
+    }
+
+    const usedIds = [...state.usedIds];
+    const nextId = () => {
+      for (let i = 1; i < usedIds.length; i += 1) {
+        if (!usedIds[i]) {
+          usedIds[i] = true;
+          return i;
+        }
+      }
+      throw new Error('No available IDs.');
+    };
+
+    const nextPasteStep = pasteSequenceRef.current + 1;
+    const offset = nextPasteStep * 20;
+    const idMap = new Map<string, number>();
+
+    const framesToPaste = parsed.frames.map((frame) => {
+      const id = nextId();
+      idMap.set(frame.originalId, id);
+      return {
+        id,
+        kind: frame.kind,
+        x: frame.x + offset,
+        y: frame.y + offset,
+        width: frame.width,
+        height: frame.height,
+        label: frame.label ?? null,
+      };
+    });
+
+    const nodesToPaste = parsed.nodes.map((node) => {
+      const id = nextId();
+      idMap.set(node.originalId, id);
+      return {
+        id,
+        kind: node.kind,
+        x: node.x + offset,
+        y: node.y + offset,
+        label: node.label ?? null,
+      };
+    });
+
+    const edgesToPaste = parsed.edges.flatMap((edge) => {
+      const from = idMap.get(edge.fromOriginalId);
+      const to = idMap.get(edge.toOriginalId);
+      if (!from || !to) {
+        return [];
+      }
+      return [{
+        id: nextId(),
+        from,
+        to,
+      }];
+    });
+
+    if (framesToPaste.length === 0 && nodesToPaste.length === 0) {
+      return;
+    }
+
+    loadState({
+      nodes: [...state.nodes, ...nodesToPaste],
+      frames: [...state.frames, ...framesToPaste],
+      edges: [...state.edges, ...edgesToPaste],
+    });
+
+    setSelectedNodes(nodesToPaste.map((node) => node.id));
+    setSelectedFrames(framesToPaste.map((frame) => frame.id));
+    setSelectedEdges(edgesToPaste.map((edge) => edge.id));
+    pasteSequenceRef.current = nextPasteStep;
+  }, [state, loadState, setSelectedNodes, setSelectedFrames, setSelectedEdges]);
+
   // Keyboard event handler
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const target = event.target as Element;
@@ -171,6 +295,25 @@ const Canvas: React.FC = () => {
       target.getAttribute('contenteditable') === 'true';
 
     if (isTextInput) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    const isClipboardShortcut = (event.ctrlKey || event.metaKey) && !event.altKey;
+
+    if (isClipboardShortcut && key === 'c') {
+      event.preventDefault();
+      void copySelectionToClipboard();
+      return;
+    }
+
+    if (isClipboardShortcut && key === 'v') {
+      event.preventDefault();
+      if (pasteShortcutLockedRef.current) {
+        return;
+      }
+      pasteShortcutLockedRef.current = true;
+      void pasteFromClipboard();
       return;
     }
 
@@ -278,6 +421,8 @@ const Canvas: React.FC = () => {
     setSelectedNodes,
     updateNode,
     updateFrame,
+    copySelectionToClipboard,
+    pasteFromClipboard,
   ]);
 
   // Set up mouse event listeners
@@ -306,6 +451,19 @@ const Canvas: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'v') {
+        pasteShortcutLockedRef.current = false;
+      }
+    };
+
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Disable canvas interactions while drawing tools are active
   useEffect(() => {
@@ -349,21 +507,32 @@ const Canvas: React.FC = () => {
     }
 
     const wrapper = wrapperRef.current;
-    const clampScale = (value: number) =>
-      Math.min(MAX_CANVAS_SCALE, Math.max(MIN_CANVAS_SCALE, value));
 
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
-
-      const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
-      setCanvasScale((prevScale) => clampScale(prevScale * zoomFactor));
+      if (event.deltaY < 0) {
+        zoomIn();
+      } else {
+        zoomOut();
+      }
     };
 
     wrapper.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       wrapper.removeEventListener('wheel', handleWheel);
     };
-  }, []);
+  }, [zoomIn, zoomOut]);
+
+  useEffect(() => {
+    const handleZoomIn = () => zoomIn();
+    const handleZoomOut = () => zoomOut();
+    window.addEventListener(ZOOM_IN_EVENT, handleZoomIn);
+    window.addEventListener(ZOOM_OUT_EVENT, handleZoomOut);
+    return () => {
+      window.removeEventListener(ZOOM_IN_EVENT, handleZoomIn);
+      window.removeEventListener(ZOOM_OUT_EVENT, handleZoomOut);
+    };
+  }, [zoomIn, zoomOut]);
 
   const viewBoxWidth = canvasViewport.width / canvasScale;
   const viewBoxHeight = canvasViewport.height / canvasScale;
