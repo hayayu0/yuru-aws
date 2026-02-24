@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useAppState } from './useAppState';
 import { useAppActions } from './useAppActions';
 import { getSVGCoordinates } from '../utils/coordinates';
-import { elementSize } from '../types/aws';
+import { elementSize, getDefaultLabelForKind } from '../types/aws';
 
 export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | null>) => {
   const { state } = useAppState();
@@ -174,7 +174,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
         y: Math.min(startY, coords.y),
         width,
         height,
-        label: null,
+        label: getDefaultLabelForKind(kind),
       });
       
       setNodeToAdd(null);
@@ -189,7 +189,7 @@ export const useMouseEventManager = (svgRef: React.RefObject<SVGSVGElement | nul
           kind: state.nodeToAdd,
           x: coords.x - elementSize.defaultNodeWidth / 2,
           y: coords.y - elementSize.defaultNodeHeight / 2,
-          label: null,
+          label: getDefaultLabelForKind(state.nodeToAdd),
         };
         addNode(newNode);
         setPendingEditNodeId(-1); // Use -1 as a signal to edit the most recently added node

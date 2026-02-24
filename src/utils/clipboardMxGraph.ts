@@ -1,5 +1,5 @@
 import type { AppState, Edge, Frame, Node } from "../types";
-import { elementSize } from "../types/aws";
+import { elementSize, getDefaultLabelForKind } from "../types/aws";
 
 const EDGE_STROKE_WIDTH = 1.5;
 const CLIPBOARD_ID_START = 1001;
@@ -248,7 +248,7 @@ function buildElementStyle(attrs: ElementAttributes): string {
 }
 
 export const buildMxNodeCell = (node: Node, idFormatter?: IdFormatter): string => {
-  const label = node.label || node.kind;
+  const label = node.label || getDefaultLabelForKind(node.kind);
   const attrs = ELEMENT_ATTRIBUTES[node.kind];
   const fallbackStyle = `sketch=0;${POINTS_IN_STYLE}fontColor=${COLOR_GROUP.GENERALDARK};fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.organizations;`;
   const style = attrs ? buildElementStyle(attrs) : fallbackStyle;
@@ -259,7 +259,7 @@ export const buildMxNodeCell = (node: Node, idFormatter?: IdFormatter): string =
 };
 
 export const buildMxFrameCell = (frame: Frame, idFormatter?: IdFormatter): string => {
-  const label = frame.label || frame.kind;
+  const label = frame.label || getDefaultLabelForKind(frame.kind);
   const id = idFormatter ? idFormatter(frame.id) : String(frame.id);
   if (frame.kind === "PublicSubnet") {
     return `<mxCell id="${id}" value="${escapeXml(label)}" style="shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;grStroke=0;strokeColor=#7AA116;fillColor=#F2F6E8;verticalAlign=top;align=left;spacingLeft=30;fontColor=#248814;dashed=0;" vertex="1" parent="1"><mxGeometry x="${frame.x}" y="${frame.y}" width="${frame.width}" height="${frame.height}" as="geometry"/></mxCell>`;
@@ -415,7 +415,7 @@ export const parseMxGraphClipboard = (rawText: string): ParsedClipboardData | nu
           y,
           width,
           height,
-          label: value && value.length > 0 ? value : null,
+          label: value && value.length > 0 ? value : getDefaultLabelForKind(kind),
         });
       } else {
         const kind = parseNodeKindFromStyle(styleMap);
@@ -424,7 +424,7 @@ export const parseMxGraphClipboard = (rawText: string): ParsedClipboardData | nu
           kind,
           x,
           y,
-          label: value && value.length > 0 ? value : null,
+          label: value && value.length > 0 ? value : getDefaultLabelForKind(kind),
         });
       }
       knownVertexIds.add(cellId);

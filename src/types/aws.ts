@@ -118,6 +118,11 @@ export const elementSize = {
   frameMinHeight: 98,
 };
 
+export const getDefaultLabelForKind = (kind: string): string => {
+  const defaultLabel = awsServices[kind]?.buttonText;
+  return defaultLabel && defaultLabel.length > 0 ? defaultLabel : kind;
+};
+
 export const getIconPath = (kind: string): string => {
   return `aws-icons/${kind}.png`;
 };

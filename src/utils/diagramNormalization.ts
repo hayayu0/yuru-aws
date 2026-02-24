@@ -1,5 +1,5 @@
 ﻿import type { Node, Frame, Edge } from "../types";
-import { elementSize, awsServices } from "../types/aws";
+import { elementSize, awsServices, getDefaultLabelForKind } from "../types/aws";
 
 const toRoundedNumber = (value: unknown, fallback = 0): number => {
   const numeric = Number(value);
@@ -60,10 +60,11 @@ export const sanitiseNode = (raw: unknown): Node | null => {
 
   const x = toRoundedNumber(candidate.x);
   const y = toRoundedNumber(candidate.y);
-  const label = toOptionalString(candidate.label);
+  const rawLabel = toOptionalString(candidate.label);
 
   // Check if kind exists in awsServices, if not use OtherService
   const validKind = awsServices[kind] ? kind : 'OtherService';
+  const label = rawLabel && rawLabel.length > 0 ? rawLabel : getDefaultLabelForKind(validKind);
 
   return {
     id,
@@ -91,13 +92,14 @@ export const sanitiseFrame = (raw: unknown): Frame | null => {
   const y = toRoundedNumber(candidate.y);
   let width = toRoundedNumber(candidate.width, elementSize.frameMinWidth);
   let height = toRoundedNumber(candidate.height, elementSize.frameMinHeight);
-  const label = toOptionalString(candidate.label);
+  const rawLabel = toOptionalString(candidate.label);
 
   width = Math.max(elementSize.frameMinWidth, width);
   height = Math.max(elementSize.frameMinHeight, height);
 
   // Check if kind exists in awsServices, if not use OtherService
   const validKind = awsServices[kind] ? kind : 'OtherService';
+  const label = rawLabel && rawLabel.length > 0 ? rawLabel : getDefaultLabelForKind(validKind);
 
   return {
     id,
