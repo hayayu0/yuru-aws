@@ -17,12 +17,14 @@ const ZOOM_STEP_IN = 1.1;
 const ZOOM_STEP_OUT = 0.9;
 const ZOOM_IN_EVENT = 'yuruaws:zoom-in';
 const ZOOM_OUT_EVENT = 'yuruaws:zoom-out';
+const GRID_VISIBILITY_EVENT = 'yuruaws:grid-visibility';
 
 const Canvas: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pasteSequenceRef = useRef(0);
   const pasteShortcutLockedRef = useRef(false);
+  const [showGrid, setShowGrid] = useState(true);
   const [canvasScale, setCanvasScale] = useState(DEFAULT_CANVAS_SCALE);
   const [canvasViewport, setCanvasViewport] = useState({ width: 1, height: 1 });
   const clampScale = useCallback((value: number) => (
@@ -534,6 +536,19 @@ const Canvas: React.FC = () => {
     };
   }, [zoomIn, zoomOut]);
 
+  useEffect(() => {
+    const handleGridVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setShowGrid(customEvent.detail);
+      }
+    };
+    window.addEventListener(GRID_VISIBILITY_EVENT, handleGridVisibility);
+    return () => {
+      window.removeEventListener(GRID_VISIBILITY_EVENT, handleGridVisibility);
+    };
+  }, []);
+
   const viewBoxWidth = canvasViewport.width / canvasScale;
   const viewBoxHeight = canvasViewport.height / canvasScale;
 
@@ -569,10 +584,10 @@ const Canvas: React.FC = () => {
         style={{
           width: '100%',
           height: '100%',
-          background: 'url(#grid)'
+          background: '#ffffff'
         }}
       >
-        <GridBackground />
+        {showGrid && <GridBackground />}
         <defs>
           {/* Regular arrow marker */}
           <marker
@@ -638,11 +653,13 @@ const Canvas: React.FC = () => {
         </defs>
         
         {/* Grid background rectangle */}
-        <rect
-          width="100%"
-          height="100%"
-          fill="url(#grid)"
-        />
+        {showGrid && (
+          <rect
+            width="100%"
+            height="100%"
+            fill="url(#grid)"
+          />
+        )}
         
         {/* Diagram SVG with structured layers */}
         <DiagramSVG svgRef={svgRef} />

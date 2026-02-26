@@ -1,4 +1,4 @@
-﻿import React, { useRef } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { useAppState } from "../hooks/useAppState";
 import { useAppActions } from "../hooks/useAppActions";
 import type { Edge } from "../types";
@@ -19,6 +19,11 @@ const SaveLoadButton: React.FC = () => {
   const isDisabled = state.interactionMode === 'waitingAI';
   const triggerZoomIn = () => window.dispatchEvent(new Event('yuruaws:zoom-in'));
   const triggerZoomOut = () => window.dispatchEvent(new Event('yuruaws:zoom-out'));
+  const [showGrid, setShowGrid] = useState(true);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('yuruaws:grid-visibility', { detail: showGrid }));
+  }, [showGrid]);
 
   const exportToJSON = () => {
     if (isDisabled) return;
@@ -182,6 +187,16 @@ const SaveLoadButton: React.FC = () => {
       >
         🔍-
       </button>
+
+      <label className="toolbar-grid-toggle" title="Toggle grid lines">
+        <input
+          type="checkbox"
+          checked={showGrid}
+          onChange={(event) => setShowGrid(event.target.checked)}
+          disabled={isDisabled}
+        />
+        <span>グリッド線</span>
+      </label>
 
       <input
         ref={fileInputRef}

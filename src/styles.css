@@ -87,6 +87,20 @@ button {
   color: darkred;
 }
 
+.toolbar-grid-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--toolbar-fg);
+  font-size: 0.9rem;
+  user-select: none;
+  cursor: pointer;
+}
+
+.toolbar-grid-toggle input {
+  margin: 0;
+}
+
 .ai-bar {
   display: flex;
   justify-content: space-between;
@@ -121,9 +135,9 @@ button {
   background: #f8fafc;
   color: #0f172a;
   font: inherit;
-  font-size: 1.25em;
+  font-size: 0.9rem;
   resize: vertical;
-  min-height: 2.5rem;
+  min-height: 2rem;
 }
 
 .ai-bar-input:disabled {

@@ -13,7 +13,7 @@ interface GridBackgroundProps {
 
 const GridBackground: React.FC<GridBackgroundProps> = ({
   gridSize = 20,
-  strokeColor = 'rgba(226, 232, 240, 0.6)',
+  strokeColor = 'rgba(206, 212, 220, 0.6)',
   strokeWidth = 1,
   patternId = 'grid'
 }) => (
